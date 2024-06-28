@@ -18,3 +18,6 @@ Objective function:
 Tools:
 
 - 一些前處理的code，目前尚未和主程式嫁接
+
+Reference paper:
+https://papers.cumincad.org/data/works/att/cf2005_1_38_111.content.pdf
