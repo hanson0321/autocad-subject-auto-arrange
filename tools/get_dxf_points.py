@@ -16,8 +16,7 @@ def get_points(file_path):
         elif e.dxftype() == 'LINE':
             start = e.dxf.start
             end = e.dxf.end
-            points.append((start.x, start.y))
-            points.append((end.x, end.y))
+            points.append([(start.x, start.y),(end.x, end.y)])
     return points
 
 if __name__ == '__main__':
