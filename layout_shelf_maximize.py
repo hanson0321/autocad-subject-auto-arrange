@@ -51,8 +51,7 @@ obj_params = {
     9: {'w_h': [95,59], 'connect':[], 'fixed_wall': 'any'},
     10: {'w_h': [185,90], 'connect':[], 'fixed_wall': 'any'},
     11: {'w_h': [100,85], 'connect':[], 'fixed_wall': 'none'},
-    12: {'w_h': [83,64], 'connect':[], 'fixed_wall': 'none'},
-    13: {'w_h': [80,55], 'connect':[], 'fixed_wall': 'none'}
+    12: {'w_h': [83,64], 'connect':[], 'fixed_wall': 'none'}
 }
 
 '''
