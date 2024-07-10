@@ -9,11 +9,19 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 from tools import get_dxf_points
+import ezdxf
+from ezdxf import colors
+from ezdxf.enums import TextEntityAlignment
 
 DualReductions = 0
-#Define the parameters and variables
 
+# Define space parameters
+SPACE_WIDTH = 1700
+SPACE_HEIGHT = 1100
+AISLE_SPACE = 100
+COUNTER_SPACING = 110
 
+# Define object parameters
 obj_params = {
     0: {'w_h': [422,66], 'connect':[], 'fixed_wall': 'none'},
     1: {'w_h': [658,66], 'connect':[], 'fixed_wall': 'any'},
@@ -35,6 +43,7 @@ obj_params = {
     17: {'w_h': [396,76], 'connect':[], 'fixed_wall': 'none'}
 }
 
+# Define unusable grid cells
 unusable_gridcell = {
     0:{'x':0,'y':0,'w':100, 'h':30},
     1:{'x':500,'y':0,'w':150, 'h':50}
@@ -43,10 +52,6 @@ num_objects = len(obj_params)
 num_unusable_cells = len(unusable_gridcell)
 
 
-# Space parameters
-SPACE_WIDTH = 1700
-SPACE_HEIGHT = 1100
-AISLE_SPACE = 100
 
 # Fixed object position
 fixed_room = 0
@@ -61,60 +66,32 @@ def layout_opt(obj_params, num_objects, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, 
     model = gp.Model("layout_generation_front desk")
     model.params.NonConvex = 2
 
-
+    p, q, s, t, orientation = {}, {}, {}, {}, {}
+    x, y, w, h, select, select2, T = {}, {}, {}, {}, {}, {}, {}
     # Binary variables
-    p = {}
     for i in range(num_objects):
         for j in range(num_objects):
             if i != j:
                 p[i, j] = model.addVar(vtype=GRB.BINARY, name=f"p_{i}_{j}")
-    q = {}
-    for i in range(num_objects):
-        for j in range(num_objects):
-            if i != j:
                 q[i, j] = model.addVar(vtype=GRB.BINARY, name=f"q_{i}_{j}")
-
-    s = {}
-    for i in range(num_objects):
         for k in range(num_unusable_cells):
             s[i, k] = model.addVar(vtype=GRB.BINARY, name=f"s_{i}_{k}")
-    t = {}
-    for i in range(num_objects):
-        for k in range(num_unusable_cells):
             t[i, k] = model.addVar(vtype=GRB.BINARY, name=f"t_{i}_{k}")
-
-    orientation = {}
-    for i in range(num_objects):
         orientation[i] = model.addVar(vtype=GRB.BINARY, name=f"orientation_{i}")
-    # Dimension variables
-    x = {}
-    for k in range(num_objects):
-        x[k] = model.addVar(vtype=GRB.CONTINUOUS, name=f"x_{k}")
-    
-    y = {}
-    for k in range(num_objects):
-        y[k] = model.addVar(vtype=GRB.CONTINUOUS, name=f"y_{k}")
-    w = {}
-    for k in range(num_objects):
-        w[k] = model.addVar(vtype=GRB.CONTINUOUS, name=f"w_{k}")
-    h = {}
-    for k in range(num_objects):
-        h[k] = model.addVar(vtype=GRB.CONTINUOUS, name=f"h_{k}")
 
-    select = {}
+    # Dimension variables
     for i in range(num_objects):
+        x[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"x_{i}")
+        y[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"y_{i}")
+        w[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"w_{i}")
+        h[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"h_{i}")
+
         for k in range(4):
             select[i,k] = model.addVar(vtype=GRB.BINARY, name=f"select_{i,k}")
-
-    select2 = {}
-    for i in range(num_objects):
-        for k in range(4):
             select2[i,k] = model.addVar(vtype=GRB.BINARY, name=f"select2_{i,k}")
     
-    T = {}
-    for i in range(num_objects):
-        for k in range(num_objects):
-            T[i,k] = model.addVar(vtype=GRB.CONTINUOUS, name=f"T_{i,k}")
+        for j in range(num_objects):
+            T[i,j] = model.addVar(vtype=GRB.CONTINUOUS, name=f"T_{i,j}")
 
 
     # Set objective
@@ -172,15 +149,15 @@ def layout_opt(obj_params, num_objects, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, 
         for j in range(num_objects):
             if not obj_params[i]['connect'] and i != j:
                 if [i, j] == [1,0] or [i,j]==[0,1]:
-                    model.addConstr((orientation[i]==0)>>(x[i] + w[i] + 110 <= x[j] + SPACE_WIDTH * (p[i,j] + q[i,j])), name="Non-intersecting Constraint 1")
-                    model.addConstr((orientation[i]==1)>>(y[i] + h[i] + 110 <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j])), name="Non-intersecting Constraint 2")
-                    model.addConstr((orientation[i]==0)>>(x[j] + w[j] + 110 <= x[i] + SPACE_WIDTH * (1 - p[i,j] + q[i,j])), name = "Non-intersecting Constraint 3")
-                    model.addConstr((orientation[i]==1)>>(y[j] + h[j] + 110 <= y[i] + SPACE_HEIGHT * (2 - p[i,j] - q[i,j])), name = "Non-intersecting Constraint 4")
+                    model.addConstr((orientation[i]==0)>>(x[i] + w[i] + COUNTER_SPACING <= x[j] + SPACE_WIDTH * (p[i,j] + q[i,j])), name="Non-intersecting Constraint 1")
+                    model.addConstr((orientation[i]==1)>>(y[i] + h[i] + COUNTER_SPACING <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j])), name="Non-intersecting Constraint 2")
+                    model.addConstr((orientation[i]==0)>>(x[j] + w[j] + COUNTER_SPACING <= x[i] + SPACE_WIDTH * (1 - p[i,j] + q[i,j])), name = "Non-intersecting Constraint 3")
+                    model.addConstr((orientation[i]==1)>>(y[j] + h[j] + COUNTER_SPACING <= y[i] + SPACE_HEIGHT * (2 - p[i,j] - q[i,j])), name = "Non-intersecting Constraint 4")
 
-                    model.addConstr((orientation[i]==0)>>(x[i] + w[i] + 110 >= x[j] - SPACE_WIDTH * (p[i,j] + q[i,j])), name="Non-intersecting Constraint 1")
-                    model.addConstr((orientation[i]==1)>>(y[i] + h[i] + 110 >= y[j] - SPACE_HEIGHT * (1 + p[i,j] - q[i,j])), name="Non-intersecting Constraint 2")
-                    model.addConstr((orientation[i]==0)>>(x[j] + w[j] + 110 >= x[i] - SPACE_WIDTH * (1 - p[i,j] + q[i,j])), name = "Non-intersecting Constraint 3")
-                    model.addConstr((orientation[i]==1)>>(y[j] + h[j] + 110 >= y[i] - SPACE_HEIGHT * (2 - p[i,j] - q[i,j])), name = "Non-intersecting Constraint 4")
+                    model.addConstr((orientation[i]==0)>>(x[i] + w[i] + COUNTER_SPACING >= x[j] - SPACE_WIDTH * (p[i,j] + q[i,j])), name="Non-intersecting Constraint 1")
+                    model.addConstr((orientation[i]==1)>>(y[i] + h[i] + COUNTER_SPACING >= y[j] - SPACE_HEIGHT * (1 + p[i,j] - q[i,j])), name="Non-intersecting Constraint 2")
+                    model.addConstr((orientation[i]==0)>>(x[j] + w[j] + COUNTER_SPACING >= x[i] - SPACE_WIDTH * (1 - p[i,j] + q[i,j])), name = "Non-intersecting Constraint 3")
+                    model.addConstr((orientation[i]==1)>>(y[j] + h[j] + COUNTER_SPACING >= y[i] - SPACE_HEIGHT * (2 - p[i,j] - q[i,j])), name = "Non-intersecting Constraint 4")
                 else:
                     # non-intersecting constraints
                     # object i to the left of object j
@@ -301,9 +278,6 @@ def layout_plot(result, unusable_gridcell):
     plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
 
-import ezdxf
-from ezdxf import colors
-from ezdxf.enums import TextEntityAlignment
 
 def draw_dxf(result,name,W,H):
     points = {}
