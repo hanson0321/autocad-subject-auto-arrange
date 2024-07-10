@@ -108,10 +108,21 @@ def layout_opt(obj_params, num_objects, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, 
         else:
             for j in obj_params[i]['connect']:
                 print(f'connect{j}')
+
+                # Constraint that ensure that object i is to the left of or adjacent to object j when p[i, j] + q[i, j] = 0.
                 model.addConstr(x[i] + w[i] >= x[j] - SPACE_WIDTH*(p[i,j] + q[i,j]), name="Connectivity Constraint 1")
+
+                # Constraint that ensures that the bottom side of object i is at least as low as the top side of object j 
+                # when 1 + p[i, j] - q[i, j] = 0, ensuring vertical adjacency or overlap.
                 model.addConstr(y[i] + h[i] >= y[j] - SPACE_HEIGHT*(1 + p[i,j] - q[i,j]), name="Connectivity Constraint 2")
+                
+                # Constraint that ensures that the right side of object j is at least as far to the right as the left side of object i,
+                # meaning object j can be to the right of, or overlapping, or adjacent to object i.
                 model.addConstr(x[j] + w[j] >= x[i] - SPACE_WIDTH*(1 - p[i,j] + q[i,j]), name = "Connectivity Constraint 3")
+                
+                # Constraint that ensures that the bottom side of object j is at least as low as the top side of object i,
                 model.addConstr(y[j] + h[j] >= y[i] - SPACE_HEIGHT*(2 - p[i,j] - q[i,j]), name = "Connectivity Constraint 4")
+                
                 model.addConstr(0.5*(w[i]+w[j]) >= T[i,j] + (y[j] - y[i]) - SPACE_WIDTH*(p[i,j] + q[i,j]), name="overlap constraint_18")
                 model.addConstr(0.5*(h[i]+h[j]) >= T[i,j] + (x[j] - x[i]) - SPACE_HEIGHT*(2 - p[i,j] - q[i,j]), name="overlap constraint_19")
                 model.addConstr(0.5*(w[i]+w[j]) >= T[i,j] + (y[i] - y[j]) - SPACE_WIDTH*(1 - p[i,j] + q[i,j]), name="overlap constraint_20")
