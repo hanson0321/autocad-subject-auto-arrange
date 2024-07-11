@@ -19,5 +19,12 @@ Tools:
 
 - 一些前處理的code，目前尚未和主程式嫁接
 
+Different versions of code
+
+看大家在做的code是哪個部分可以用不同的code去試
+- layout_latetestVer.py: 單純擺放進去，沒有貨架區的maximization
+- layout_shelf_maximize.py: 貨架區擺放，但沒有把全部物件都放進去
+- layoput_steps.py: 分兩類擺放，靠牆的物件先擺，不靠牆的物件後擺。目前這個方式可以擺放所有物件可以跑出結果，但座位區的擺放還沒加入。
+
 Reference paper:
 https://papers.cumincad.org/data/works/att/cf2005_1_38_111.content.pdf
