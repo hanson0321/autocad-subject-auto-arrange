@@ -1,4 +1,4 @@
-# 如何正面預留空間開門
+
 import gurobipy as gp
 from gurobipy import GRB
 import pandas as pd
@@ -14,9 +14,7 @@ from ezdxf.enums import TextEntityAlignment
 
 DualReductions = 0
 
-
-
-def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, unusable_gridcell):
+def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, OPENDOOR_SPACING, LINEUP_SPACING, unusable_gridcell):
     # Create a Gurobi model
     start_time = time.time()
     model = gp.Model("layout_generation_front desk")
@@ -41,7 +39,7 @@ def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, unu
             b = i
     
     p, q, s, t, orientation = {}, {}, {}, {}, {}
-    x, y, w, h, select, select2, T = {}, {}, {}, {}, {}, {}, {}
+    x, y, w, h, select, T = {}, {}, {}, {}, {}, {}
     # Binary variables
     for i in range(num_optgroup1):
         for j in range(num_optgroup1):
@@ -62,7 +60,6 @@ def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, unu
 
         for k in range(4):
             select[i,k] = model.addVar(vtype=GRB.BINARY, name=f"select_{i,k}")
-            select2[i,k] = model.addVar(vtype=GRB.BINARY, name=f"select2_{i,k}")
     
         for j in range(num_optgroup1):
             T[i,j] = model.addVar(vtype=GRB.CONTINUOUS, name=f"T_{i,j}")
@@ -109,24 +106,48 @@ def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, unu
     
     # Fixed border constraint
     for i in range(num_optgroup1):
-        if optgroup_1[i]['fixed_wall'] == 'north':
-            model.addConstr(y[i] == 0, name="North border constraint")
-        elif optgroup_1[i]['fixed_wall']== 'south':
-            model.addConstr(y[i]+max(optgroup_1[i]['w_h']) == SPACE_HEIGHT, name="South border constraint")
-        elif optgroup_1[i]['fixed_wall']== 'east':
-            model.addConstr(x[i]+w[i] == SPACE_WIDTH, name="East border constraint")
-        elif optgroup_1[i]['fixed_wall']== 'west':
-            model.addConstr(x[i] == 0, name="West border constraint")
-        
+        if not optgroup_1[i]['fixed_wall']:
+            print(f'No fixed wall constraint for object {i}')
         elif optgroup_1[i]['fixed_wall']== 'any':
             # 選靠哪面牆
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]+(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
-        
-        else:
-            print(f'No fixed wall constraint for object {i}')
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+        elif optgroup_1[i]['fixed_wall'] == 'north':
+            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
+            # 限制長邊靠牆
+            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr(select[i,2]==1, name="North border constraint")
+        elif optgroup_1[i]['fixed_wall']== 'south':
+            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
+            # 限制長邊靠牆
+            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr(select[i,3]==1, name="South border constraint")
+        elif optgroup_1[i]['fixed_wall']== 'east':
+            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
+            # 限制長邊靠牆
+            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr(select[i,1]==1, name="East border constraint")
+        elif optgroup_1[i]['fixed_wall']== 'west':
+            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
+            # 限制長邊靠牆
+            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr(select[i,0]==1, name="West border constraint")
+            
+            
+
+                
+
 
     
     # Non-intersecting with aisle constraint
@@ -211,6 +232,41 @@ def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, unu
             result.update({i:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X}})
             unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X}})
             num_unusable_cells+=1
+        
+        # Save space for door opening and lineup sapce for front counter
+
+        num_unusable_cells = len(unusable_gridcell2)
+
+        for i in range(num_optgroup1):
+            if i == b:
+                if select[i,0].X == 1:
+                    unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X+w[i].X+COUNTER_SPACING+w[f].X, 'y':y[i].X, 'w':LINEUP_SPACING, 'h':h[i].X}})
+                    num_unusable_cells+=1
+                elif select[i,1].X == 1:
+                    unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X-(w[f].X + COUNTER_SPACING+LINEUP_SPACING), 'y':y[i].X, 'w':LINEUP_SPACING, 'h':h[i].X}})
+                    num_unusable_cells+=1
+                elif select[i,2].X == 1:
+                    unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X, 'y':y[i].X+h[i].X+COUNTER_SPACING+h[f].X, 'w':w[i].X, 'h':LINEUP_SPACING}})
+                    num_unusable_cells+=1
+                elif select[i,3].X == 1:
+                    unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X, 'y':y[i].X-(h[f].X+COUNTER_SPACING+LINEUP_SPACING), 'w':w[i].X, 'h':LINEUP_SPACING}})
+                    num_unusable_cells+=1
+            if i == f:
+                pass
+            else:
+                print(f'object:{i}: select[i,0]={select[i,0].X},  select[i,1]={select[i,1].X}, select[i,2]={select[i,2].X}, select[i,3]={select[i,3].X}')
+                if select[i,0].X == 1:
+                    unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X+w[i].X, 'y':y[i].X, 'w':OPENDOOR_SPACING, 'h':h[i].X}})
+                    num_unusable_cells+=1
+                elif select[i,1].X == 1:
+                    unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X-OPENDOOR_SPACING, 'y':y[i].X, 'w':OPENDOOR_SPACING, 'h':h[i].X}})
+                    num_unusable_cells+=1
+                elif select[i,2].X == 1:
+                    unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X, 'y':y[i].X+h[i].X, 'w':w[i].X, 'h':OPENDOOR_SPACING}})
+                    num_unusable_cells+=1
+                elif select[i,3].X == 1:
+                    unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X, 'y':y[i].X-OPENDOOR_SPACING, 'w':w[i].X, 'h':OPENDOOR_SPACING}})
+                    num_unusable_cells+=1
         print(unusable_gridcell2)
         
     elif model.status == GRB.INFEASIBLE:
@@ -251,7 +307,7 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
     
 
     p, q, s, t, orientation = {}, {}, {}, {}, {}
-    x, y, w, h, select, select2, T = {}, {}, {}, {}, {}, {}, {}
+    x, y, w, h, select, T = {}, {}, {}, {}, {}, {}
     # Binary variables
     for i in range(num_optgroup2):
         for j in range(num_optgroup2):
@@ -272,7 +328,6 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
 
         for k in range(4):
             select[i,k] = model.addVar(vtype=GRB.BINARY, name=f"select_{i,k}")
-            select2[i,k] = model.addVar(vtype=GRB.BINARY, name=f"select2_{i,k}")
     
         for j in range(num_optgroup2):
             T[i,j] = model.addVar(vtype=GRB.CONTINUOUS, name=f"T_{i,j}")
@@ -307,13 +362,13 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
     # Fixed border constraint
     for i in range(num_optgroup2):
         if optgroup_2[i]['fixed_wall'] == 'north':
-            model.addConstr(y[i] == 0, name="North border constraint")
+            model.addConstr(select[i,2]==1, name="North border constraint")
         elif optgroup_2[i]['fixed_wall']== 'south':
-            model.addConstr(y[i]+max(optgroup_2[i]['w_h']) == SPACE_HEIGHT, name="South border constraint")
+            model.addConstr(select[i,3]==1, name="South border constraint")
         elif optgroup_2[i]['fixed_wall']== 'east':
-            model.addConstr(x[i]+w[i] == SPACE_WIDTH, name="East border constraint")
+            model.addConstr(select[i,1]==1, name="East border constraint")
         elif optgroup_2[i]['fixed_wall']== 'west':
-            model.addConstr(x[i] == 0, name="West border constraint")
+            model.addConstr(select[i,0]==1, name="West border constraint")
         
         elif optgroup_2[i]['fixed_wall']== 'any':
             # 選靠哪面牆
@@ -368,7 +423,7 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
     model.optimize()
     end_time = time.time()
     result = {}
-
+    shelf_area = {}
 
     # Print objective value and runtime
     if model.status == GRB.OPTIMAL:
@@ -377,7 +432,8 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
         for i in range(num_optgroup2):
             print(f"Object {i}: x={x[i].X}, y={y[i].X}, w={w[i].X}, h={h[i].X}")
             result.update({i:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X}})
-        print("Total area:", model.objVal)
+            if i == shelf:
+                shelf_area.update({shelf:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X}})
         
     elif model.status == GRB.INFEASIBLE:
         print("The problem is infeasible. Review your constraints.")
@@ -389,7 +445,7 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
             if c.IISConstr: print(f'\t{c.constrname}: {model.getRow(c)} {c.Sense} {c.RHS}')
         pass
     
-    return result
+    return result, shelf_area
 
 
 def layout_plot(obj_params, result1, result2, unusable_gridcell):
@@ -476,12 +532,14 @@ if __name__ == '__main__':
     SPACE_WIDTH, SPACE_HEIGHT = get_range.get_rectangle('/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/result.dxf')
     AISLE_SPACE = 100
     COUNTER_SPACING = 110
+    OPENDOOR_SPACING = 110
+    LINEUP_SPACING = 160
     
     #Define the parameters and variables
     obj_params = {
         0: {'group':2,'w_h': [SPACE_WIDTH,SPACE_HEIGHT], 'connect':[], 'fixed_wall': 'none', 'name':'貨架區'},
         1: {'group':1,'w_h': [465,66], 'connect':[], 'fixed_wall': 'none', 'name':'前櫃檯'},
-        2: {'group':1,'w_h': [598,66], 'connect':[], 'fixed_wall': 'any', 'name':'後櫃檯'},
+        2: {'group':1,'w_h': [598,66], 'connect':[], 'fixed_wall': 'north', 'name':'後櫃檯'},
         3: {'group':1,'w_h': [365,270], 'connect':[], 'fixed_wall': 'any', 'name':'WI'}, 
         4: {'group':2,'w_h': [90,66], 'connect':[], 'fixed_wall': 'none', 'name':'雙溫櫃'},
         5: {'group':2,'w_h': [90,66], 'connect':[], 'fixed_wall': 'none', 'name':'單溫櫃'},
@@ -499,7 +557,7 @@ if __name__ == '__main__':
         1:{'x':500,'y':0,'w':150, 'h':50}
     }
 
-    result1, unusable_gridcell2 = layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, unusable_gridcell)
-    result2 = layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_gridcell2)
-    # draw_dxf(result,"output_dxf/optresult.dxft",SPACE_WIDTH,SPACE_HEIGHT)
+    result1, unusable_gridcell2 = layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, OPENDOOR_SPACING, LINEUP_SPACING, unusable_gridcell)
+    result2, shelf_placement = layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_gridcell2)
+    # draw_dxf(result,"output_dxf/optresult.dxf",SPACE_WIDTH,SPACE_HEIGHT)
     layout_plot(obj_params, result1, result2, unusable_gridcell)
