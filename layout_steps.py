@@ -361,24 +361,43 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
     
     # Fixed border constraint
     for i in range(num_optgroup2):
-        if optgroup_2[i]['fixed_wall'] == 'north':
-            model.addConstr(select[i,2]==1, name="North border constraint")
-        elif optgroup_2[i]['fixed_wall']== 'south':
-            model.addConstr(select[i,3]==1, name="South border constraint")
-        elif optgroup_2[i]['fixed_wall']== 'east':
-            model.addConstr(select[i,1]==1, name="East border constraint")
-        elif optgroup_2[i]['fixed_wall']== 'west':
-            model.addConstr(select[i,0]==1, name="West border constraint")
-        
+        if not optgroup_2[i]['fixed_wall']:
+            print(f'No fixed wall constraint for object {i}')
         elif optgroup_2[i]['fixed_wall']== 'any':
             # 選靠哪面牆
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]+(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
-        
-        else:
-            pass
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+        elif optgroup_2[i]['fixed_wall'] == 'north':
+            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
+            # 限制長邊靠牆
+            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr(select[i,2]==1, name="North border constraint")
+        elif optgroup_2[i]['fixed_wall']== 'south':
+            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
+            # 限制長邊靠牆
+            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr(select[i,3]==1, name="South border constraint")
+        elif optgroup_2[i]['fixed_wall']== 'east':
+            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
+            # 限制長邊靠牆
+            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr(select[i,1]==1, name="East border constraint")
+        elif optgroup_2[i]['fixed_wall']== 'west':
+            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
+            # 限制長邊靠牆
+            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
+            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
+                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr(select[i,0]==1, name="West border constraint")
 
     
     # Non-intersecting with aisle constraint
