@@ -1,66 +1,112 @@
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+def placement_width(total_length, shelves):
+    shelves.sort(reverse=True)
+    num_shelves = len(shelves)
+    SHELF_SPACING_WIDTH = 120
 
-def knapsack(max_width, max_height, items, gap):
-    # DP table initialization
-    dp = [[0] * (max_height + 1) for _ in range(max_width + 1)]
-    keep = [[[] for _ in range(max_height + 1)] for _ in range(max_width + 1)]
-    
-    for item_key in items:
-        width, height, count = items[item_key]
-        # 最大化貨架個數
-        #value = count
-        # 最大化貨架面積
-        value = width * height * count 
-        adjusted_width = width + gap
-        adjusted_height = height + gap
-        for w in range(max_width, adjusted_width - 1, -1):
-            for h in range(max_height, adjusted_height - 1, -1):
-                if dp[w - adjusted_width][h - adjusted_height] + value > dp[w][h]:
-                    dp[w][h] = dp[w - adjusted_width][h - adjusted_height] + value
-                    keep[w][h] = keep[w - adjusted_width][h - adjusted_height] + [(item_key, width, height, count)]
-    
-    return dp[max_width][max_height], keep[max_width][max_height]
+    # Initialize DP table
+    DP = [0] * (total_length + 1)
 
-def visualize_placement(max_width, max_height, placement, gap):
-    current_x = 0
-    current_y = 0
-    coordinates = {}
+    # Fill DP table
+    for j in range(1, total_length + 1):
+        for i in range(num_shelves):
+            shelf_duration = shelves[i]
+            effective_duration = shelf_duration + SHELF_SPACING_WIDTH
+            if j >= effective_duration:
+                DP[j] = max(DP[j], DP[j - effective_duration] + shelf_duration)
 
-    index = 0
-    for item in placement:
-        item_key, width, height, count = item
-        for _ in range(count):
-            if current_x + width + gap > max_width:
-                current_x = 0
-                current_y += height + gap
-            if current_y + height + gap > max_height:
+    # Backtracking to find the selected shelves
+    shelf_x = []
+    j = total_length
+    while j > 0:
+        for i in range(num_shelves):
+            shelf_duration = shelves[i]
+            effective_duration = shelf_duration + SHELF_SPACING_WIDTH
+            if j >= effective_duration and DP[j] == DP[j - effective_duration] + shelf_duration:
+                shelf_x.append(shelf_duration)
+                j -= effective_duration
                 break
-            coordinates[index] = {"type": item_key, "x": current_x, "y": current_y, "width": width, "height": height}
-            index += 1
-            current_x += width + gap
+        else:
+            break  # No more shelves can fit in the remaining space
+    for i in range(num_shelves):
+        if total_length-(DP[total_length]+SHELF_SPACING_WIDTH*(len(shelf_x))) >= shelves[i]:
+            print(shelves[i])
+            shelf_x.append(shelves[i])
+            result_x = DP[total_length]+shelves[i]
+            break
+        else:
+            result_x = DP[total_length]
 
-    
-    return coordinates
 
-def knapsack_placement(max_width, max_height, gap, items):
+    shelf_x.reverse()
+    print("Selected shelves:", shelf_x)
+    print("Total shelf space:", result_x)
+    return shelf_x
 
-    max_value, placement = knapsack(max_width, max_height, items, gap)
-    
-    print(f"Max racks amount: {max_value}")
-    print("Solution:")
-    for item in placement:
-        item_key, width, height, count = item
-        print(f"Type: {item_key}, Size: {width}x{height}, Amount: {count}")
-    
-    coordinates = visualize_placement(max_width, max_height, placement, gap)
-    shelf_placement ={}
-    print("Coordinates of placed items:")
-    for key, coord in coordinates.items():
-        shelf_placement.update({key:{'x': coord['x'], 'y': coord['y'],'w': coord['width'], 'h':coord['height']}})
-    print(shelf_placement)
+def placement_height(total_length, shelves):
+    # shelf durations (in length)
+    num_shelves = len(shelves)
+    SHELF_SPACING_HEIGHT = 110
 
-    return shelf_placement
+    # Initialize DP table
+    DP = [0] * (total_length + 1)
 
-if __name__ == "__main__":
-    knapsack_placement()
+    # Fill DP table
+    for j in range(1, total_length + 1):
+        for i in range(num_shelves):
+            shelf_duration = shelves[i]
+            effective_duration = shelf_duration + SHELF_SPACING_HEIGHT
+            if j >= effective_duration:
+                DP[j] = max(DP[j], DP[j - effective_duration] + shelf_duration)
+
+    # Backtracking to find the selected shelves
+    shelf_y = []
+    j = total_length
+    while j > 0:
+        for i in range(num_shelves):
+            shelf_duration = shelves[i]
+            effective_duration = shelf_duration + SHELF_SPACING_HEIGHT
+            if j >= effective_duration and DP[j] == DP[j - effective_duration] + shelf_duration:
+                shelf_y.append(shelf_duration)
+                j -= effective_duration
+                break
+        else:
+            break  # No more shelves can fit in the remaining space
+
+    for i in range(num_shelves):
+        if total_length-(DP[total_length]+SHELF_SPACING_HEIGHT*(len(shelf_y))) >= shelves[i]:
+            print(shelves[i])
+            shelf_y.append(shelves[i])
+            result_y = DP[total_length]+shelves[i]
+            break
+        else:
+            result_y = DP[total_length]
+
+
+    shelf_y.reverse()
+    print("Selected shelves:", shelf_y)
+    print("Total shelf space:", result_y)
+    return shelf_y
+
+def knapsack_placement(W, H, shelf_spec, shelf_height):
+    shelf_x = placement_width(W, shelf_spec)
+    shelf_y = placement_height(H, shelf_height)
+    placement = {}
+    shelf_amount = len(shelf_x)*len(shelf_y)
+    tmp_y = 0
+    i = 0
+    for j in range(len(shelf_y)):
+        tmp_x = 0
+        for k in range(len(shelf_x)):        
+            tmp_dict = {'x':tmp_x, 'y':tmp_y, 'w':shelf_x[k], 'h':78}
+            placement.update({i:tmp_dict})
+            tmp_x+=shelf_x[k]+110
+            i+=1
+        tmp_y+=188     
+    print(placement)
+    return placement
+
+if __name__ =='__main__':
+    max_width, max_height = 1127, 490
+    shelf_spec = [132, 223, 314, 405, 496, 587, 678, 91, 182, 273, 364, 455, 546]
+    shelf_height = [78]
+    knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
