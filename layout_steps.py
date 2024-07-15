@@ -473,17 +473,16 @@ def shelf_opt(shelf_area, shelf_spec, counter_placement):
     x, y = shelf_area['x'], shelf_area['y']
     max_width = int(shelf_area['w'])
     max_height = int(shelf_area['h'])
-    gap = 80  # 間隔
     if counter_placement == 'west':
-        shelf_placement = KPtest.knapsack_placement(max_width, max_height, gap, shelf_spec)
+        shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
     elif counter_placement == 'east':
-        shelf_placement = KPtest.knapsack_placement(max_width, max_height, gap, shelf_spec)
+        shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
         shelf_placement = flip.vertical(max_width, shelf_placement)
     elif counter_placement == 'north':
-        shelf_placement = KPtest.knapsack_placement(max_height, max_width, gap, shelf_spec)
+        shelf_placement = KPtest.knapsack_placement(max_height, max_width, shelf_spec, shelf_height)
         shelf_placement = flip.cw(max_height, max_width, shelf_placement)
     elif counter_placement == 'south':
-        shelf_placement = KPtest.knapsack_placement(max_height, max_width, gap, shelf_spec)
+        shelf_placement = KPtest.knapsack_placement(max_height, max_width, shelf_spec, shelf_height)
         shelf_placement = flip.ccw(max_height, max_width, shelf_placement)
     num_shelf = len(shelf_placement)
 
@@ -553,8 +552,11 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
         w = object_info['w']
         h = object_info['h']
         if object_id ==0:
+            '''
             plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_name[object_id]))
+            print(f'The area of shelf area = {w}x{h}')
             plt.text(x + w/2, y + h/2, object_name[object_id], ha='center', va='center', color='red', fontsize=12)
+            '''
             pass
         else:
             plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_name[object_id]))
@@ -566,7 +568,7 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
     num_shelf = len(shelf_placement)
     object_name = {}
     for i in range(num_shelf):
-        shelf_name = f"{int(shelf_placement[i]['w'])}x{int(shelf_placement[i]['y'])}"
+        shelf_name = f"{int(shelf_placement[i]['w'])}x{int(shelf_placement[i]['h'])}"
         object_name.update({i:shelf_name})
   
     # Plot each object
@@ -628,12 +630,8 @@ if __name__ == '__main__':
     }
     # input coordinates for hollowed out spaces and columns
 
-    shelf_spec = {
-        1: (132, 78, 3), 2: (223, 78, 5), 3: (314, 78, 7), 4: (405, 78, 9), 5: (496, 78, 11),
-        6: (587, 78, 13), 7: (678, 78, 15),
-        8: (91, 78, 2), 9: (182, 78, 4), 10: (273, 78, 6), 11: (364, 78, 8), 12: (455, 78, 10),
-        13: (546, 78, 12), 14: (546, 78, 14)
-    }
+    shelf_spec = [132, 223, 314, 405, 496, 587, 678, 91, 182, 273, 364, 455, 546]
+    shelf_height = [78]
 
     result1, unusable_gridcell2, counter_placement = layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, OPENDOOR_SPACING, LINEUP_SPACING, unusable_gridcell)
     result2, shelf_area = layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_gridcell2)
