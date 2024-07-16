@@ -91,7 +91,6 @@ def knapsack_placement(W, H, shelf_spec, shelf_height):
     shelf_x = placement_width(W, shelf_spec)
     shelf_y = placement_height(H, shelf_height)
     placement = {}
-    shelf_amount = len(shelf_x)*len(shelf_y)
     tmp_y = 0
     i = 0
     for j in range(len(shelf_y)):
@@ -105,8 +104,43 @@ def knapsack_placement(W, H, shelf_spec, shelf_height):
     print(placement)
     return placement
 
+def calculate_x(i, shelf_placement):
+    if i == 0:
+        return shelf_placement[0]['x']
+    elif i == 1:
+        return shelf_placement[0]['x'] + shelf_placement[0]['w'] + 120 * i
+    else:
+        return calculate_x(i - 1, shelf_placement) + shelf_placement[i - 1]['w'] + 120
+    
+def add_FF(shelf_placement,shelf_spec,):
+    FF_WIDTH = 360
+    FF_HEIGHT = 66
+
+    shelf_placement[0]['w'] = FF_WIDTH
+    shelf_placement[0]['h'] = FF_HEIGHT
+
+    # Now use the recursive function to set the x positions
+    for i in range(len(shelf_placement)):
+        if shelf_placement[i]['y']== 0:
+            shelf_placement[i]['x'] = calculate_x(i, shelf_placement)
+    tmp=0
+    shelf_spec.sort(reverse=True)
+    for i in range(len(shelf_placement)):
+        if shelf_placement[i]['y']==0:
+            tmp += 1
+    tmp -=1
+    i=0
+    while shelf_placement[tmp]['x']+shelf_placement[tmp]['w'] > 1100:
+        shelf_placement[tmp]['w']= shelf_spec[i]
+        i+=1
+    return shelf_placement
+
+
+
 if __name__ =='__main__':
     max_width, max_height = 1127, 490
     shelf_spec = [132, 223, 314, 405, 496, 587, 678, 91, 182, 273, 364, 455, 546]
     shelf_height = [78]
-    knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
+    shelf_placement = knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
+    add_FF(shelf_placement, shelf_spec)
+
