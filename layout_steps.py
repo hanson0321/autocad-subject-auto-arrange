@@ -1,3 +1,7 @@
+# 加入貨架區優化的程式啦！！！！
+# 加入初始的unusable gridcell, 可能要改一下邊界的顯示，還有初始的unusable_gridcell可以改成黑色邊邊看起來比較正常
+# 靠牆物件要可以靠起始的unusable_gridcell不然空間不夠求不出解
+# FF用類似heuristic rule的方式取代掉第0個貨架，並且會把後面超出去的貨架換掉換小一點的
 import gurobipy as gp
 from gurobipy import GRB
 import time
@@ -469,20 +473,20 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
     
     return result, shelf_area
 
+
 def shelf_opt(shelf_area, shelf_spec, counter_placement):
     x, y = shelf_area['x'], shelf_area['y']
     max_width = int(shelf_area['w'])
     max_height = int(shelf_area['h'])
+    shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
+    shelf_placement = KPtest.add_FF(shelf_placement,shelf_spec,)
     if counter_placement == 'west':
-        shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
+        pass
     elif counter_placement == 'east':
-        shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
         shelf_placement = flip.vertical(max_width, shelf_placement)
     elif counter_placement == 'north':
-        shelf_placement = KPtest.knapsack_placement(max_height, max_width, shelf_spec, shelf_height)
         shelf_placement = flip.cw(max_height, max_width, shelf_placement)
     elif counter_placement == 'south':
-        shelf_placement = KPtest.knapsack_placement(max_height, max_width, shelf_spec, shelf_height)
         shelf_placement = flip.ccw(max_height, max_width, shelf_placement)
     num_shelf = len(shelf_placement)
 
@@ -568,8 +572,12 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
     num_shelf = len(shelf_placement)
     object_name = {}
     for i in range(num_shelf):
-        shelf_name = f"{int(shelf_placement[i]['w'])}x{int(shelf_placement[i]['h'])}"
-        object_name.update({i:shelf_name})
+        if i ==0:
+            shelf_name = 'FF'
+            object_name.update({i:shelf_name})
+        else:
+            shelf_name = f"{int(shelf_placement[i]['w'])}x{int(shelf_placement[i]['h'])}"
+            object_name.update({i:shelf_name})
   
     # Plot each object
     for object_id, object_info in data.items():
