@@ -1,7 +1,3 @@
-# 加入貨架區優化的程式啦！！！！
-# 加入初始的unusable gridcell, 可能要改一下邊界的顯示，還有初始的unusable_gridcell可以改成黑色邊邊看起來比較正常
-# 靠牆物件要可以靠起始的unusable_gridcell不然空間不夠求不出解
-# FF用類似heuristic rule的方式取代掉第0個貨架，並且會把後面超出去的貨架換掉換小一點的
 import gurobipy as gp
 from gurobipy import GRB
 import time
