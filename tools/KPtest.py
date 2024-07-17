@@ -29,7 +29,7 @@ def placement_width(total_length, shelves):
             break  # No more shelves can fit in the remaining space
     for i in range(num_shelves):
         if total_length-(DP[total_length]+SHELF_SPACING_WIDTH*(len(shelf_x))) >= shelves[i]:
-            print(shelves[i])
+            #print(shelves[i])
             shelf_x.append(shelves[i])
             result_x = DP[total_length]+shelves[i]
             break
@@ -74,7 +74,7 @@ def placement_height(total_length, shelves):
 
     for i in range(num_shelves):
         if total_length-(DP[total_length]+SHELF_SPACING_HEIGHT*(len(shelf_y))) >= shelves[i]:
-            print(shelves[i])
+            #print(shelves[i])
             shelf_y.append(shelves[i])
             result_y = DP[total_length]+shelves[i]
             break
@@ -101,7 +101,7 @@ def knapsack_placement(W, H, shelf_spec, shelf_height):
             tmp_x+=shelf_x[k]+110
             i+=1
         tmp_y+=188     
-    print(placement)
+    print(f'Shelf palcement:{placement}')
     return placement
 
 def calculate_x(i, shelf_placement):
@@ -112,7 +112,7 @@ def calculate_x(i, shelf_placement):
     else:
         return calculate_x(i - 1, shelf_placement) + shelf_placement[i - 1]['w'] + 120
     
-def add_FF(shelf_placement,shelf_spec,):
+def add_FF(shelf_placement,shelf_spec, max_width):
     FF_WIDTH = 360
     FF_HEIGHT = 66
 
@@ -130,7 +130,7 @@ def add_FF(shelf_placement,shelf_spec,):
             tmp += 1
     tmp -=1
     i=0
-    while shelf_placement[tmp]['x']+shelf_placement[tmp]['w'] > 1100:
+    while shelf_placement[tmp]['x']+shelf_placement[tmp]['w'] > max_width:
         shelf_placement[tmp]['w']= shelf_spec[i]
         i+=1
     return shelf_placement
@@ -142,5 +142,5 @@ if __name__ =='__main__':
     shelf_spec = [132, 223, 314, 405, 496, 587, 678, 91, 182, 273, 364, 455, 546]
     shelf_height = [78]
     shelf_placement = knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
-    add_FF(shelf_placement, shelf_spec)
+    add_FF(shelf_placement, shelf_spec, max_width)
 
