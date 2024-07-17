@@ -114,35 +114,45 @@ def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, OPE
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_1[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_1[i]['w_h']) == SPACE_HEIGHT))
         elif optgroup_1[i]['fixed_wall'] == 'north':
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_1[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_1[i]['w_h']) == SPACE_HEIGHT))
             model.addConstr(select[i,2]==1, name="North border constraint")
         elif optgroup_1[i]['fixed_wall']== 'south':
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_1[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_1[i]['w_h']) == SPACE_HEIGHT))
             model.addConstr(select[i,3]==1, name="South border constraint")
         elif optgroup_1[i]['fixed_wall']== 'east':
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_1[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_1[i]['w_h']) == SPACE_HEIGHT))
             model.addConstr(select[i,1]==1, name="East border constraint")
         elif optgroup_1[i]['fixed_wall']== 'west':
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_1[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_1[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_1[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_1[i]['w_h']) == SPACE_HEIGHT))
             model.addConstr(select[i,0]==1, name="West border constraint")
             
     # Non-intersecting with aisle constraint
@@ -162,16 +172,16 @@ def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, OPE
                 else:
                     # non-intersecting constraints
                     # object i to the left of object j
-                    model.addConstr(x[i] + w[i] + AISLE_SPACE <= x[j] + SPACE_WIDTH * (p[i,j] + q[i,j]), name="Non-intersecting Constraint 1")
+                    model.addConstr(x[i] + w[i] + 0.1 <= x[j] + SPACE_WIDTH * (p[i,j] + q[i,j]), name="Non-intersecting Constraint 1")
                     
                     # object i above object j
-                    model.addConstr(y[i] + h[i] + AISLE_SPACE <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j]), name="Non-intersecting Constraint 2")
+                    model.addConstr(y[i] + h[i] + 0.1 <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j]), name="Non-intersecting Constraint 2")
                     
                     # object i to the right of object j
-                    model.addConstr(x[j] + w[j] + AISLE_SPACE <= x[i] + SPACE_WIDTH * (1 - p[i,j] + q[i,j]), name = "Non-intersecting Constraint 3")
+                    model.addConstr(x[j] + w[j] + 0.1 <= x[i] + SPACE_WIDTH * (1 - p[i,j] + q[i,j]), name = "Non-intersecting Constraint 3")
                     
                     # object i below object j
-                    model.addConstr(y[j] + h[j] + AISLE_SPACE <= y[i] + SPACE_HEIGHT * (2 - p[i,j] - q[i,j]), name = "Non-intersecting Constraint 4")
+                    model.addConstr(y[j] + h[j] + 0.1 <= y[i] + SPACE_HEIGHT * (2 - p[i,j] - q[i,j]), name = "Non-intersecting Constraint 4")
             elif i!=j:
                 model.addConstr(x[i] + w[i] <= x[j] + SPACE_WIDTH * (p[i,j] + q[i,j]), name="Non-intersecting Constraint 1")
                 model.addConstr(y[i] + h[i] <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j]), name="Non-intersecting Constraint 2")
@@ -370,35 +380,45 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
         elif optgroup_2[i]['fixed_wall'] == 'north':
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
             model.addConstr(select[i,2]==1, name="North border constraint")
         elif optgroup_2[i]['fixed_wall']== 'south':
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
             model.addConstr(select[i,3]==1, name="South border constraint")
         elif optgroup_2[i]['fixed_wall']== 'east':
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
             model.addConstr(select[i,1]==1, name="East border constraint")
         elif optgroup_2[i]['fixed_wall']== 'west':
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
             # 限制長邊靠牆
             model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((x[i]+1)*select[i,0]+(x[i]+min(optgroup_2[i]['w_h'])-SPACE_WIDTH+1)*select[i,1]+(y[i]+1)*select[i,2]
-                            +(y[i]+min(optgroup_2[i]['w_h'])-SPACE_HEIGHT+1)*select[i,3]==1, name='any constraint')
+            model.addConstr((select[i,0]==1)>>(x[i]==0))
+            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
+            model.addConstr((select[i,2]==1)>>(y[i]==0))
+            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
             model.addConstr(select[i,0]==1, name="West border constraint")
 
     
@@ -455,6 +475,7 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
             result.update({i:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X}})
             if i == shelf:
                 shelf_area.update({'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X})
+                print(shelf_area, select[i,0],select[i,1],select[i,2],select[i,3])
             
     elif model.status == GRB.INFEASIBLE:
         print("The problem is infeasible. Review your constraints.")
@@ -474,14 +495,20 @@ def shelf_opt(shelf_area, shelf_spec, counter_placement):
     max_width = int(shelf_area['w'])
     max_height = int(shelf_area['h'])
     shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
-    shelf_placement = KPtest.add_FF(shelf_placement,shelf_spec,)
+    shelf_placement = KPtest.add_FF(shelf_placement,shelf_spec, max_width)
     if counter_placement == 'west':
         pass
     elif counter_placement == 'east':
+        shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
+        shelf_placement = KPtest.add_FF(shelf_placement,shelf_spec, max_width)
         shelf_placement = flip.vertical(max_width, shelf_placement)
     elif counter_placement == 'north':
+        shelf_placement = KPtest.knapsack_placement(max_height, max_width, shelf_spec, shelf_height)
+        shelf_placement = KPtest.add_FF(shelf_placement,shelf_spec, max_width)
         shelf_placement = flip.cw(max_height, max_width, shelf_placement)
     elif counter_placement == 'south':
+        shelf_placement = KPtest.knapsack_placement(max_height, max_width, shelf_spec, shelf_height)
+        shelf_placement = KPtest.add_FF(shelf_placement,shelf_spec, max_width)
         shelf_placement = flip.ccw(max_height, max_width, shelf_placement)
     num_shelf = len(shelf_placement)
 
@@ -551,11 +578,11 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
         w = object_info['w']
         h = object_info['h']
         if object_id ==0:
-            '''
+            
             plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_name[object_id]))
             print(f'The area of shelf area = {w}x{h}')
             plt.text(x + w/2, y + h/2, object_name[object_id], ha='center', va='center', color='red', fontsize=12)
-            '''
+            
             pass
         else:
             plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_name[object_id]))
@@ -626,7 +653,7 @@ if __name__ == '__main__':
         6: {'group':2,'w_h': [90,66], 'connect':[], 'fixed_wall': 'none', 'name':'OC'},
         7: {'group':1,'w_h': [310,225], 'connect':[], 'fixed_wall': 'any', 'name':'RI'},
         8: {'group':1,'w_h': [95,59], 'connect':[], 'fixed_wall': 'any', 'name':'EC'},
-        9: {'group':1,'w_h': [190,90], 'connect':[], 'fixed_wall': 'none', 'name':'子母櫃'},
+        9: {'group':1,'w_h': [190,90], 'connect':[], 'fixed_wall': 'any', 'name':'子母櫃'},
         10: {'group':1,'w_h': [100,85], 'connect':[], 'fixed_wall': 'any', 'name':'ATM'},
         11: {'group':1,'w_h': [83,64], 'connect':[], 'fixed_wall': 'any', 'name':'影印'},
         12: {'group':1,'w_h': [80,55], 'connect':[], 'fixed_wall': 'any', 'name':'KIOSK'}
