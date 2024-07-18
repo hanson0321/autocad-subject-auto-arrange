@@ -4,14 +4,12 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib
-from tools import get_range
-import ezdxf
-from ezdxf import colors
-from ezdxf.enums import TextEntityAlignment
 from tools import get_feasible_area
 from tools import KPtest
 from tools import coordinate_flipping as flip
 from tools import get_feasible_area
+from dxf_tools import dxf_manipulation
+import re
 
 DualReductions = 0
 
@@ -231,8 +229,8 @@ def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, OPE
         print(f"Runtime: {end_time - start_time} seconds")
         print("Optimal solution found!")
         for i in range(num_optgroup1):
-            print(f"Object {i}: x={x[i].X}, y={y[i].X}, w={w[i].X}, h={h[i].X}")
-            result.update({i:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X}})
+            result.update({i:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X, 'name': optgroup_1[i]['name']}})
+            print(f"{result[i]['name']} : x={result[i]['x']}, y={result[i]['y']}, w={result[i]['w']}, h={result[i]['h']}")
             unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X}})
             num_unusable_cells+=1
         
@@ -257,7 +255,6 @@ def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, OPE
             if i == f:
                 pass
             else:
-                print(f'object:{i}: select[i,0]={select[i,0].X},  select[i,1]={select[i,1].X}, select[i,2]={select[i,2].X}, select[i,3]={select[i,3].X}')
                 if select[i,0].X == 1:
                     unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X+w[i].X, 'y':y[i].X, 'w':OPENDOOR_SPACING, 'h':h[i].X}})
                     num_unusable_cells+=1
@@ -270,7 +267,6 @@ def layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, OPE
                 elif select[i,3].X == 1:
                     unusable_gridcell2.update({num_unusable_cells:{'x':x[i].X, 'y':y[i].X-OPENDOOR_SPACING, 'w':w[i].X, 'h':OPENDOOR_SPACING}})
                     num_unusable_cells+=1
-        print(f'Used grid cells in optimization stage 1: {unusable_gridcell2}')
 
         if select[b,0].X==1:
             counter_placement = 'west'
@@ -471,11 +467,10 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
         print(f"Runtime: {end_time - start_time} seconds")
         print("Optimal solution found!")
         for i in range(num_optgroup2):
-            print(f"Object {i}: x={x[i].X}, y={y[i].X}, w={w[i].X}, h={h[i].X}")
-            result.update({i:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X}})
+            result.update({i:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X, 'name': optgroup_2[i]['name']}})
+            print(f"{result[i]['name']} : x={result[i]['x']}, y={result[i]['y']}, w={result[i]['w']}, h={result[i]['h']}")
             if i == shelf:
                 shelf_area.update({'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X})
-                print(shelf_area, select[i,0],select[i,1],select[i,2],select[i,3])
             
     elif model.status == GRB.INFEASIBLE:
         print("The problem is infeasible. Review your constraints.")
@@ -486,18 +481,16 @@ def layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusab
         for c in model.getConstrs():
             if c.IISConstr: print(f'\t{c.constrname}: {model.getRow(c)} {c.Sense} {c.RHS}')
         pass
-    
-    return result, shelf_area
+    return result, shelf_area, shelf
 
 
 def shelf_opt(shelf_area, shelf_spec, counter_placement):
     x, y = shelf_area['x'], shelf_area['y']
     max_width = int(shelf_area['w'])
     max_height = int(shelf_area['h'])
-    shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
-    shelf_placement = KPtest.add_FF(shelf_placement,shelf_spec, max_width)
     if counter_placement == 'west':
-        pass
+        shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
+        shelf_placement = KPtest.add_FF(shelf_placement,shelf_spec, max_width)
     elif counter_placement == 'east':
         shelf_placement = KPtest.knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
         shelf_placement = KPtest.add_FF(shelf_placement,shelf_spec, max_width)
@@ -515,6 +508,17 @@ def shelf_opt(shelf_area, shelf_spec, counter_placement):
     for i in range(num_shelf):
         shelf_placement[i]['x'] = shelf_placement[i]['x']+x
         shelf_placement[i]['y'] = shelf_placement[i]['y']+y
+    num_shelf = len(shelf_placement)
+    
+    for i in range(num_shelf):
+        if i ==0:
+            shelf_name = 'FF'
+            shelf_placement[i]['name'] = shelf_name
+        else:
+            shelf_name = f"{int(shelf_placement[i]['w'])}x{int(shelf_placement[i]['h'])}"
+            shelf_placement[i]['name'] = shelf_name
+    for i in range(num_shelf):
+        print(f"{shelf_placement[i]['name']} : x={shelf_placement[i]['x']}, y={shelf_placement[i]['y']}, w={shelf_placement[i]['w']}, h={shelf_placement[i]['h']}")
 
     return shelf_placement
 
@@ -532,7 +536,7 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
     plt.figure(figsize=(8, 8))
     matplotlib.rcParams['font.family'] = ['Heiti TC']
     # Plot total space
-    plt.gca().add_patch(plt.Rectangle((0, 0), total_space['width'], total_space['height'], fill=None, edgecolor='blue', label='Total Space'))
+    plt.gca().add_patch(plt.Rectangle((0, 0), SPACE_WIDTH, SPACE_HEIGHT, fill=None, edgecolor='blue', label='Total Space'))
     
     optgroup_1 = {}
     
@@ -578,11 +582,11 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
         w = object_info['w']
         h = object_info['h']
         if object_id ==0:
-            
+            '''
             plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_name[object_id]))
             print(f'The area of shelf area = {w}x{h}')
             plt.text(x + w/2, y + h/2, object_name[object_id], ha='center', va='center', color='red', fontsize=12)
-            
+            '''
             pass
         else:
             plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_name[object_id]))
@@ -607,10 +611,10 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
         y = object_info['y']
         w = object_info['w']
         h = object_info['h']
-
+        
         plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_name[object_id]))
         plt.text(x + w/2, y + h/2, object_name[object_id], ha='center', va='center', color='red', fontsize=12)
-
+        
     # Plot obstacle
     # Parameters adaptation
     obstacle_positions = [(unusable_gridcell[k]['x'], unusable_gridcell[k]['y']) for k in unusable_gridcell]
@@ -620,8 +624,8 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
         plt.gca().add_patch(plt.Rectangle((x_u, y_u), w_u, h_u, fill=None, edgecolor='red', label = 'X'))
         plt.text(x_u + w_u/2, y_u + h_u/2, 'x', ha='center', va='center', color='red', fontsize=8)
     # Set plot limits and labels
-    plt.xlim(0, total_space['width'])
-    plt.ylim(0,total_space['height'])
+    plt.xlim(0, SPACE_WIDTH)
+    plt.ylim(0,SPACE_HEIGHT)
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.title('Space Layout')
@@ -634,7 +638,12 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
 
 if __name__ == '__main__':
     doc ='/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise.dxf'
-    unusable_gridcell, min_x, max_x, min_y, max_y, feasible = get_feasible_area.feasible_area(doc)
+    unusable_gridcell, min_x, max_x, min_y, max_y, poly_feasible = get_feasible_area.feasible_area(doc)
+    # Extract points from the input string using regular expression
+    points = re.findall(r'\d+\s\d+', str(poly_feasible).replace("POLYGON ", ""))
+    # Convert points to tuples of integers
+    feasible = [tuple(map(int, point.split())) for point in points]
+
     SPACE_WIDTH,SPACE_HEIGHT= max_x-min_x+1, max_y-min_y+1
     #SPACE_WIDTH, SPACE_HEIGHT = get_range.get_rectangle(doc)
     AISLE_SPACE = 100
@@ -664,7 +673,12 @@ if __name__ == '__main__':
     shelf_height = [78]
 
     result1, unusable_gridcell2, counter_placement = layout_opt_group1(obj_params,COUNTER_SPACING, SPACE_WIDTH, SPACE_HEIGHT, OPENDOOR_SPACING, LINEUP_SPACING, unusable_gridcell)
-    result2, shelf_area = layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_gridcell2)
+    result2, shelf_area, shelf_id = layout_opt_group2(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_gridcell2)
+    result2.pop(shelf_id)
     shelf_placement = shelf_opt(shelf_area, shelf_spec, counter_placement)
-    # draw_dxf(result,"output_dxf/optresult.dxf",SPACE_WIDTH,SPACE_HEIGHT)
+    # Integrate 3 results into 1 dictionary
+    result = {}
+    values = list(result1.values()) + list(result2.values()) + list(shelf_placement.values())
+    result = {i: values[i] for i in range(len(values))}
+    dxf_manipulation.draw_dxf(result,feasible)
     layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell)
