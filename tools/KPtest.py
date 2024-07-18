@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import matplotlib
 def placement_width(total_length, shelves):
     shelves.sort(reverse=True)
     num_shelves = len(shelves)
@@ -38,8 +41,6 @@ def placement_width(total_length, shelves):
 
 
     shelf_x.reverse()
-    print("Selected shelves:", shelf_x)
-    print("Total shelf space:", result_x)
     return shelf_x
 
 def placement_height(total_length, shelves):
@@ -83,8 +84,6 @@ def placement_height(total_length, shelves):
 
 
     shelf_y.reverse()
-    print("Selected shelves:", shelf_y)
-    print("Total shelf space:", result_y)
     return shelf_y
 
 def knapsack_placement(W, H, shelf_spec, shelf_height):
@@ -101,7 +100,6 @@ def knapsack_placement(W, H, shelf_spec, shelf_height):
             tmp_x+=shelf_x[k]+110
             i+=1
         tmp_y+=188     
-    print(f'Shelf palcement:{placement}')
     return placement
 
 def calculate_x(i, shelf_placement):
@@ -138,9 +136,42 @@ def add_FF(shelf_placement,shelf_spec, max_width):
 
 
 if __name__ =='__main__':
-    max_width, max_height = 1127, 490
+    max_width, max_height = 2500,  1500
     shelf_spec = [132, 223, 314, 405, 496, 587, 678, 91, 182, 273, 364, 455, 546]
     shelf_height = [78]
     shelf_placement = knapsack_placement(max_width, max_height, shelf_spec, shelf_height)
-    add_FF(shelf_placement, shelf_spec, max_width)
+    shelf_placement = add_FF(shelf_placement, shelf_spec, max_width)
+    
+    data = shelf_placement
+
+    num_shelf = len(shelf_placement)
+    object_name = {}
+    for i in range(num_shelf):
+        if i ==0:
+            shelf_name = 'FF'
+            object_name.update({i:shelf_name})
+        else:
+            shelf_name = f"{int(shelf_placement[i]['w'])}x{int(shelf_placement[i]['h'])}"
+            object_name.update({i:shelf_name})
+  
+    # Plot each object
+    for object_id, object_info in data.items():
+        x = object_info['x']
+        y = object_info['y']
+        w = object_info['w']
+        h = object_info['h']
+        
+        plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_name[object_id]))
+        plt.text(x + w/2, y + h/2, object_name[object_id], ha='center', va='center', color='red', fontsize=12)
+        # Set plot limits and labels
+    plt.xlim(0, max_width)
+    plt.ylim(0,max_height)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Shelf Layout')
+
+    # Show plot
+    plt.grid(True)
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.show()
 
