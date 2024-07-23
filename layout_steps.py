@@ -637,7 +637,8 @@ def layout_plot(obj_params, result1, result2, shelf_placement, unusable_gridcell
 
 
 if __name__ == '__main__':
-    doc ='/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise.dxf'
+    # doc ='/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise.dxf'
+    doc = './input_dxf/revise.dxf'
     unusable_gridcell, min_x, max_x, min_y, max_y, poly_feasible = get_feasible_area.feasible_area(doc)
     # Extract points from the input string using regular expression
     points = re.findall(r'\d+\s\d+', str(poly_feasible).replace("POLYGON ", ""))
