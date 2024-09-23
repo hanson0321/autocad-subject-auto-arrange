@@ -10,7 +10,7 @@ OUTPUT:
 Objective:
 
 - Group 0
-- 
+
   後櫃台靠牆
   越靠近大門越好
   垂直大門
