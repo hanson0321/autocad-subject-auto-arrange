@@ -156,5 +156,8 @@ def feasible_area(doc):
         ### 紀錄位置(x,y)、寬(w)、高(h)
         unusable_gridcell[count] = {'x': left, 'y': bottom, 'w': right - left, 'h': top - bottom}
         count += 1
-
+    print(unusable_gridcell, min_x, max_x, min_y, max_y, poly_feasible)
     return unusable_gridcell, min_x, max_x, min_y, max_y, poly_feasible
+
+if __name__ == "__main__":
+    feasible_area('/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise.dxf')

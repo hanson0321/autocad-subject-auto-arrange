@@ -32,7 +32,7 @@ def draw_dxf(result, feasible_area):
             dxfattribs={
                 "layer": "TEXTLAYER",
                 "style": "MandarinStyle",
-                "height": 50  # 設置字體高度
+                "height": 40  # 設置字體高度
             }
         ).set_placement((center_x, center_y), align=TextEntityAlignment.MIDDLE_CENTER)  # 設置對齊方式為置中
         msp.add_lwpolyline(point)

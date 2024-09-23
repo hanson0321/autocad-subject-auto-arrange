@@ -29,13 +29,12 @@ def calculate_edge_lengths(edges):
         lengths[edge] = edge.length
     return lengths
 
-def place_object_along_wall(obj_params, edges, rectangles, preplaced_polygons, room_polygon, space_min_x, space_min_y, space_max_x, space_max_y, door_opening_space, unusable_gridcell, unusable_gridcell0):
+def place_object_along_wall(obj_params, edges, preplaced_polygons, room_polygon, space_min_x, space_min_y, space_max_x, space_max_y, door_opening_space, unusable_gridcell, unusable_gridcell0):
+    rectangles= [params['w_h'] for params in obj_params.values() if params['group'] == 1]
     # random.shuffle(rectangles)
     rectangles = sorted(rectangles, key=lambda x: max(x), reverse=True)
-    print(rectangles)
     # Calculate lengths of each edge
     edge_lengths = calculate_edge_lengths(edges)
-    print(edge_lengths)
     # Sort edges by length in descending order
     sorted_edges = sorted(edge_lengths.keys(), key=lambda e: edge_lengths[e], reverse=True)
 
@@ -57,7 +56,6 @@ def place_object_along_wall(obj_params, edges, rectangles, preplaced_polygons, r
             x2, y2 = edge.coords[1]
             
             if x1 == x2:  # Vertical edge
-                print('Vertical')
                 for rect_width, rect_height in rectangles:
                     placed = False
                     print(f'Trying to place rectangle: {[rect_width, rect_height]}...')
@@ -67,50 +65,37 @@ def place_object_along_wall(obj_params, edges, rectangles, preplaced_polygons, r
                         # Try to place the rectangle along the vertical segment
                         min_y = min(y1, y2)
                         max_y = max(y1, y2)
-                        if x1 < (space_min_x+space_max_x)/2:
-                            start = random.randint(int(min_y), int(max_y - long_side) + 1)
-                            for i in range(int(min_y), int(max_y - long_side) + 1):
-                                start_y = (start + i) % (int(max_y - long_side) + 1)
-                                rect = box(x1, start_y, x1 + short_side, start_y + long_side)
-                                rect_with_door = box(x1, start_y, x1 + short_side + door_opening_space, start_y + long_side)
-                                if room_polygon.contains(rect_with_door) and not rect_with_door.intersects(preplaced_union) and all(not rect_with_door.intersects(p) for p in placement_with_door):
-                                    placements.append(rect)
-                                    placement_with_door.append(rect_with_door)
-                                    placed = True
-                                    new_segments = [
-                                        LineString([(x1, min_y), (x1, start_y)]),
-                                        LineString([(x1, start_y + long_side), (x1, max_y)])
-                                    ]
-                                    break
-                        else:
-                            start = random.randint(int(min_y), int(max_y - long_side) + 1)
-                            for i in range(int(min_y), int(max_y - long_side) + 1):
-                                start_y = (start + i) % (int(max_y - long_side) + 1)
-                                rect = box(x1 - short_side, start_y, x1, start_y + long_side)
-                                rect_with_door = box(x1 - (short_side+door_opening_space), start_y, x1, start_y + long_side)
-                                if room_polygon.contains(rect_with_door) and not rect_with_door.intersects(preplaced_union) and all(not rect_with_door.intersects(p) for p in placement_with_door):
-                                    placements.append(rect)
-                                    placement_with_door.append(rect_with_door)
-                                    placed = True
-                                    new_segments = [
-                                        LineString([(x1, min_y), (x1, start_y)]),
-                                        LineString([(x1, start_y + long_side), (x1, max_y)])
-                                    ]
-                                    break
-                        if placed:
-                            print('Rectangle plcaed!')
-                            available_segments[edge] = [seg for seg in new_segments if seg.length > 0]
-                            placed_rect.append([rect_width, rect_height])
-                            rectangles = [i for i in rectangles if i not in placed_rect]
-                            break
-                        if not placed:
-                            rectangles = [i for i in rectangles if i not in placed_rect]
-                            print(f'New list: {rectangles}')
-                            print('Moving on to the next rectangle...')
-                            break
+                        start = random.randint(int(min_y), int(max_y - long_side) + 1)
+                        for i in range(int(min_y), int(max_y - long_side) + 1):
+                            start_y = (start + i) % (int(max_y - long_side) + 1)
+                            rect1 = box(x1+1, start_y, x1 + short_side+1, start_y + long_side)
+                            rect_with_door1 = box(x1, start_y, x1 + short_side + door_opening_space, start_y + long_side)
+                            rect2 = box(x1 - short_side-1, start_y, x1-1, start_y + long_side)
+                            rect_with_door2 = box(x1 - short_side - door_opening_space, start_y, x1, start_y + long_side)
+                            if room_polygon.contains(rect_with_door1) and not rect1.intersects(preplaced_union) and all(not rect_with_door1.intersects(p) for p in placements):
+                                print('3')
+                                placements.append(rect1)
+                                placement_with_door.append(rect_with_door1)
+                                placed = True
+                                break
+                            elif room_polygon.contains(rect_with_door2) and not rect2.intersects(preplaced_union) and all(not rect_with_door2.intersects(p) for p in placements):
+                                print('4')
+                                placements.append(rect2)
+                                placement_with_door.append(rect_with_door2)
+                                placed = True
+                                break 
+                    if placed:
+                        print('Rectangle plcaed!')
+                        available_segments[edge] = [seg for seg in new_segments if seg.length > 0]
+                        placed_rect.append([rect_width, rect_height])
+                        rectangles = [i for i in rectangles if i not in placed_rect]
+                        break
+                    if not placed:
+                        rectangles = [i for i in rectangles if i not in placed_rect]
+                        print('Moving on to the next rectangle...')
+                        break
 
             elif y1 == y2:  # Horizontal edge
-                print('Horizontal')
                 for rect_width, rect_height in rectangles:
                     print(f'Trying to place rectangle: {[rect_width, rect_height]}...')
                     placed = False
@@ -124,32 +109,23 @@ def place_object_along_wall(obj_params, edges, rectangles, preplaced_polygons, r
                             start = random.randint(int(min_x), int(max_x - long_side) + 1)
                             for i in range(int(min_x), int(max_x - long_side) + 1):
                                 start_x = (start + i) % (int(max_x - long_side) + 1)
-                                rect = box(start_x, y1, start_x + long_side, y1 + short_side)
-                                rect_with_door = box(start_x, y1, start_x + long_side, y1 + short_side+door_opening_space)
-                                if room_polygon.contains(rect_with_door) and not rect_with_door.intersects(preplaced_union) and all(not rect_with_door.intersects(p) for p in placement_with_door):
-                                    placements.append(rect)
-                                    placement_with_door.append(rect_with_door)
+                                rect1 = box(start_x, y1+1, start_x + long_side, y1 + short_side+1)
+                                rect_with_door1 = box(start_x, y1+1, start_x + long_side, y1 + short_side + door_opening_space)
+                                rect2 = box(start_x, y1 - short_side-1, start_x + long_side, y1-1)
+                                rect_with_door2 = box(start_x, y1 - short_side - door_opening_space-1, start_x + long_side, y1)
+                                print(room_polygon.contains(rect_with_door1), not rect1.intersects(preplaced_union), all(not rect_with_door1.intersects(p) for p in placements))
+                                if room_polygon.contains(rect_with_door1) and not rect1.intersects(preplaced_union) and all(not rect_with_door1.intersects(p) for p in placements):
+                                    print('9')
+                                    placements.append(rect1)
+                                    placement_with_door.append(rect_with_door1)
                                     placed = True
-                                    new_segments = [
-                                        LineString([(min_x, y1), (start_x, y1)]),
-                                        LineString([(start_x + long_side, y1), (max_x, y1)])
-                                    ]
                                     break
-                        else:
-                            start = random.randint(int(min_x), int(max_x - long_side) + 1)
-                            for i in range(int(min_x), int(max_x - long_side) + 1):
-                                start_x = (start + i) % (int(max_x - long_side) + 1)
-                                rect = box(start_x, y1-short_side, start_x + long_side, y1)
-                                rect_with_door = box(start_x, y1-(short_side+door_opening_space), start_x + long_side, y1)
-                                if room_polygon.contains(rect_with_door) and not rect_with_door.intersects(preplaced_union) and all(not rect_with_door.intersects(p) for p in placement_with_door):
-                                    placements.append(rect)
-                                    placement_with_door.append(rect_with_door)
+                                elif room_polygon.contains(rect_with_door2) and not rect2.intersects(preplaced_union) and all(not rect_with_door2.intersects(p) for p in placements):
+                                    print('10')
+                                    placements.append(rect2)
+                                    placement_with_door.append(rect_with_door2)
                                     placed = True
-                                    new_segments = [
-                                        LineString([(min_x, y1), (start_x, y1)]),
-                                        LineString([(start_x + long_side, y1), (max_x, y1)])
-                                    ]
-                                    break                        
+                                    break                         
                         if placed:
                             print('Rectangle plcaed!')
                             available_segments[edge] = [seg for seg in new_segments if seg.length > 0]
@@ -158,16 +134,13 @@ def place_object_along_wall(obj_params, edges, rectangles, preplaced_polygons, r
                             break
                         if not placed:
                             rectangles = [i for i in rectangles if i not in placed_rect]
-                            print(f'New list: {rectangles}')
                             print('Moving on to the next rectangle...')
                             break
             
             len_object+=long_side
-            print(len_object)
             print(f'Placed rectangls: {placed_rect}')
             if not rectangles:
                 rectangles = [i for i in rectangles if i not in placed_rect]
-                print(f'New list: {rectangles}')
                 break
             
         if rectangles:
@@ -180,7 +153,6 @@ def place_object_along_wall(obj_params, edges, rectangles, preplaced_polygons, r
     unusable_gridcell1 = {}
     values = list(unusable_gridcell.values()) + list(unusable_gridcell0.values())+list(placement_with_door.values())
     unusable_gridcell1 = {i: values[i] for i in range(len(values))}
-    print(unusable_gridcell1)
     placements_dict = create_dict_from_polygons(placements, obj_params)
     return placements, placements_dict, unusable_gridcell1
 
@@ -211,7 +183,7 @@ def create_dict_from_polygons(polygons, obj_params):
 
 if __name__ == '__main__':
     doc ='/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise.dxf'
-    unusable_gridcell, min_x, max_x, min_y, max_y, poly_feasible = get_feasible_area.feasible_area(doc)
+    _, unusable_gridcell, min_x, max_x, min_y, max_y, poly_feasible, wall, door, frontdoor = get_feasible_area.feasible_area(doc)
 
     SPACE_WIDTH,SPACE_HEIGHT= max_x-min_x+1, max_y-min_y+1
     AISLE_SPACE = 100
@@ -224,16 +196,16 @@ if __name__ == '__main__':
         0: {'group':2,'w_h': [SPACE_WIDTH,SPACE_HEIGHT], 'fixed_wall': 'none', 'name':'貨架區'},
         1: {'group':0,'w_h': [465,66], 'fixed_wall': 'none', 'name':'前櫃檯'},
         2: {'group':0,'w_h': [598,66], 'fixed_wall': 'any', 'name':'後櫃檯'},
-        3: {'group':1,'w_h': [365,270], 'fixed_wall': 'any', 'name':'WI'}, 
-        4: {'group':2,'w_h': [90,66], 'fixed_wall': 'none', 'name':'雙溫櫃'},
-        5: {'group':2,'w_h': [90,66], 'fixed_wall': 'none', 'name':'單溫櫃'},
-        6: {'group':2,'w_h': [90,66], 'fixed_wall': 'none', 'name':'OC'},
-        7: {'group':1,'w_h': [310,225], 'fixed_wall': 'any', 'name':'RI'},
+        3: {'group':0.1,'w_h': [365,270], 'fixed_wall': 'any', 'name':'WI'}, 
+        4: {'group':0.2,'w_h': [90,66], 'fixed_wall': 'none', 'name':'雙溫櫃'},
+        5: {'group':0.2,'w_h': [90,66], 'fixed_wall': 'none', 'name':'單溫櫃'},
+        6: {'group':0.2,'w_h': [90,66], 'fixed_wall': 'none', 'name':'OC'},
+        7: {'group':0.1,'w_h': [310,225], 'fixed_wall': 'any', 'name':'RI'},
         8: {'group':1,'w_h': [95,59], 'fixed_wall': 'any', 'name':'EC'},
         9: {'group':1,'w_h': [190,90], 'fixed_wall': 'any', 'name':'子母櫃'},
-        10: {'group':1,'w_h': [100,85], 'fixed_wall': 'any', 'name':'ATM'},
-        11: {'group':1,'w_h': [83,64], 'fixed_wall': 'any', 'name':'影印'},
-        12: {'group':1,'w_h': [80,55], 'fixed_wall': 'any', 'name':'KIOSK'}
+        10: {'group':0.8,'w_h': [100,85], 'fixed_wall': 'any', 'name':'ATM'},
+        11: {'group':0.5,'w_h': [83,64], 'fixed_wall': 'any', 'name':'影印'},
+        12: {'group':0.5,'w_h': [80,55], 'fixed_wall': 'any', 'name':'KIOSK'}
     }
 
     # Define the specified segment (e.g., the first edge of the polygon)
@@ -243,15 +215,12 @@ if __name__ == '__main__':
         0: {'x': 1031, 'y': 150, 'w': 378, 'h': 200}
     }
     
-    # List of rectangles with their dimensions (width, height)
-    rectangles = [[365,270], [310,225], [95,59], [190,90], [100,85], [83,64], [80,55]]
     # Create pre-placed polygons
     counter_result, counter_placement, unusable_gridcell0, available_segments = opt_group0.counter_placements(poly_feasible, obj_params, COUNTER_SPACING, LINEUP_SPACING, DOOR_PLACEMENT, DOOR_ENTRY, min_x, max_x, min_y, max_y)
     preplaced_polygons = create_preplaced_polygons(unusable_gridcell0)
-    placements_polygon, placements, unusable_gridcell1 = place_object_along_wall(obj_params, available_segments, rectangles, preplaced_polygons,poly_feasible, min_x, min_y, max_x, max_y, OPENDOOR_SPACING, unusable_gridcell, unusable_gridcell0)
+    placements_polygon, placements, unusable_gridcell1 = place_object_along_wall(obj_params, available_segments, preplaced_polygons,poly_feasible, min_x, min_y, max_x, max_y, OPENDOOR_SPACING, unusable_gridcell, unusable_gridcell0)
     # Convert list of polygons to dictionary
     result = create_dict_from_polygons(placements,obj_params)
-    print(result)
 
     # Plotting
     fig, ax = plt.subplots()

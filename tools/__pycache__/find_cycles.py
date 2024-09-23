@@ -1,9 +1,10 @@
 import networkx as nx
-from shapely.geometry import Polygon, LineString, Point
+
+from shapely.geometry import LineString, Point
 from itertools import combinations
-from tools import json_save as js
-from tools import plot
-from tools import get_dxf_points as get_points
+import json_save as js
+import plot
+from get_range import get_points
 
 def add_edges_to_graph(graph, edges):
     for start, end in edges:
@@ -92,4 +93,7 @@ def find(edges):
     return  cycle_list
 
 if __name__ =='__main__':
-    plot.plot(find(get_points.get_points('/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/Test_Before.dxf')))
+    raw = get_points('/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/Test_Before.dxf')
+    results = find(raw)
+    js.json_save(results,'cycle_list_data')
+    plot.plot(results)

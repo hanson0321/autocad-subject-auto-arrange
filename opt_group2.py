@@ -79,7 +79,7 @@ def middle_object(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_g
     # Fixed border constraint
     for i in range(num_optgroup2):
         if not optgroup_2[i]['fixed_wall']:
-            print(f'No fixed wall constraint for object {i}')
+            pass
         elif optgroup_2[i]['fixed_wall']== 'any':
             # 選靠哪面牆
             model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
@@ -135,6 +135,7 @@ def middle_object(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_g
                 model.addConstr(y[i] + h[i] + AISLE_SPACE <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j]), name="Non-intersecting Constraint 2")
                 model.addConstr(x[j] + w[j] + AISLE_SPACE <= x[i] + SPACE_WIDTH * (1 - p[i,j] + q[i,j]), name = "Non-intersecting Constraint 3")
                 model.addConstr(y[j] + h[j] + AISLE_SPACE <= y[i] + SPACE_HEIGHT * (2 - p[i,j] - q[i,j]), name = "Non-intersecting Constraint 4")
+                
 
     # Length constraint
     for i in range(num_optgroup2):

@@ -1,6 +1,6 @@
 import json
 
-def json_save(data):
+def json_save(data,name):
 
 # Convert the data into a more JSON-friendly format
     json_data = [
@@ -15,7 +15,7 @@ def json_save(data):
     print(json_string)
 
     # Optionally, write the JSON string to a file
-    with open('geometry_data.json', 'w') as file:
+    with open(f'{name}_data.json', 'w') as file:
         file.write(json_string)
 
 def json_open(file_path):
@@ -27,7 +27,7 @@ def json_open(file_path):
 
     # Corrected: Convert the list of dictionaries back to the original list of tuples format
     original_data = [
-        tuple((point['x'], point['y']) for point in segment)
+        [(point['x'], point['y']) for point in segment]
         for segment in json_data
     ]
     return original_data
