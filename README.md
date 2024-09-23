@@ -1,7 +1,8 @@
 INPUT:
 
 - doc = 'dxf檔案'
-- 加入新物件: 在obj_params那個dictionary可以加入新物件擺放
+- 物件: obj_params
+  - 分階段擺放，obj_params['group']
 - 指定不能擺放物件的區域: unusable_gridcell
 
 OUTPUT:
