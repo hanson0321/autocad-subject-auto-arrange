@@ -200,10 +200,7 @@ def place_counter_along_wall(room_polygon, rectangles, preplaced_polygons, speci
             counter_placement = 'north'
         else:
             counter_placement = 'south'
-        
-
-
-
+    print(f'HERE{placements, counter_placement}')
     return placements, counter_placement, available_segments
 
 def counter_placements(room_polygon, obj_params, counter_space, lineup_space, specified_segment, preplaced, min_x, max_x, min_y, max_y):
@@ -287,7 +284,6 @@ def counter_placements(room_polygon, obj_params, counter_space, lineup_space, sp
         unusable_gridcell0.update({3:{'x':counter_area['x']+h1, 'y':counter_area['y'], 'w':counter_space, 'h':w1}})
         unusable_gridcell0.update({4:{'x':counter_area['x']+h1+counter_space, 'y':counter_area['y']+w2, 'w':h2, 'h':90}})
         
-    
     elif counter_placement =='north' and door_placement == 'west':
         counter_result.update({0:{'x':counter_area['x'], 'y':counter_area['y']+counter_area['h']-h1, 'w':w1, 'h':h1, 'name':'後櫃檯'}})
         counter_result.update({1:{'x':counter_area['x'], 'y':counter_area['y']+lineup_space, 'w':w2, 'h':h2, 'name':'前櫃檯'}})
@@ -316,16 +312,47 @@ def counter_placements(room_polygon, obj_params, counter_space, lineup_space, sp
         unusable_gridcell0.update({2:{'x':counter_area['x']+(w1-w2), 'y':counter_area['y']+counter_area['h']-lineup_space, 'w':w2, 'h':lineup_space}})
         unusable_gridcell0.update({3:{'x':counter_area['x'], 'y':counter_area['y']+h1, 'w':w1, 'h':counter_space}})
         unusable_gridcell0.update({4:{'x':counter_area['x']+(w1-w2)-90, 'y':counter_area['y']+h1+counter_space, 'w':90, 'h':h2}})
+    
+    elif counter_placement =='east':
+        counter_result.update({0:{'x':counter_area['x']+counter_area['w']-h1, 'y':counter_area['y'], 'w':h1, 'h':w1, 'name':'後櫃檯'}})
+        counter_result.update({1:{'x':counter_area['x']+lineup_space, 'y':counter_area['y'], 'w':h2, 'h':w2, 'name':'前櫃檯'}})
+        unusable_gridcell0 = counter_result.copy()
+        unusable_gridcell0.update({2:{'x':counter_area['x'], 'y':counter_area['y'], 'w':lineup_space, 'h':w2}})
+        unusable_gridcell0.update({3:{'x':counter_area['x']+lineup_space+h2, 'y':counter_area['y'], 'w':counter_space, 'h':w1}})
+        unusable_gridcell0.update({4:{'x':counter_area['x']+lineup_space, 'y':counter_area['y']+w2, 'w':h2, 'h':90}})
+    elif counter_placement =='west':
+        counter_result.update({0:{'x':counter_area['x'], 'y':counter_area['y'], 'w':h1, 'h':w1, 'name':'後櫃檯'}})
+        counter_result.update({1:{'x':counter_area['x']+h1+counter_space, 'y':counter_area['y']+(w1-w2), 'w':h2, 'h':w2, 'name':'前櫃檯'}})
+        unusable_gridcell0 = counter_result.copy()
+        unusable_gridcell0.update({2:{'x':counter_area['x']+h1+counter_space+h2, 'y':counter_area['y']+(w1-w2), 'w':lineup_space, 'h':w2}})
+        unusable_gridcell0.update({3:{'x':counter_area['x']+h1, 'y':counter_area['y'], 'w':counter_space, 'h':w1}})
+        unusable_gridcell0.update({4:{'x':counter_area['x']+h1+counter_space, 'y':counter_area['y']+(w1-w2)-90, 'w':h2, 'h':90}})
+    elif counter_placement =='north':
+        counter_result.update({0:{'x':counter_area['x'], 'y':counter_area['y']+counter_area['h']-h1, 'w':w1, 'h':h1, 'name':'後櫃檯'}})
+        counter_result.update({1:{'x':counter_area['x'], 'y':counter_area['y']+lineup_space, 'w':w2, 'h':h2, 'name':'前櫃檯'}})
+        unusable_gridcell0 = counter_result.copy()
+        unusable_gridcell0.update({2:{'x':counter_area['x'], 'y':counter_area['y'], 'w':w2, 'h':lineup_space}})
+        unusable_gridcell0.update({3:{'x':counter_area['x'], 'y':counter_area['y']+lineup_space+h2, 'w':w1, 'h':counter_space}})
+        unusable_gridcell0.update({4:{'x':counter_area['x']+w2, 'y':counter_area['y']+lineup_space, 'w':90, 'h':h2}})  
+    elif counter_placement =='south':
+        counter_result.update({0:{'x':counter_area['x'], 'y':counter_area['y'], 'w':w1, 'h':h1, 'name':'後櫃檯'}})
+        counter_result.update({1:{'x':counter_area['x'], 'y':counter_area['y']+h1+counter_space, 'w':w2, 'h':h2, 'name':'前櫃檯'}})
+        unusable_gridcell0 = counter_result.copy()
+        unusable_gridcell0.update({2:{'x':counter_area['x'], 'y':counter_area['y']+counter_area['h']-lineup_space, 'w':w2, 'h':lineup_space}})
+        unusable_gridcell0.update({3:{'x':counter_area['x'], 'y':counter_area['y']+h1, 'w':w1, 'h':counter_space}})
+        unusable_gridcell0.update({4:{'x':counter_area['x']+w2, 'y':counter_area['y']+h1+counter_space, 'w':90, 'h':h2}})  
     values = list(unusable_gridcell0.values())+list(preplaced.values())
     unusable_gridcell0 = {}
     unusable_gridcell0 = {i: values[i] for i in range(len(values))}
     return  counter_result, counter_placement, unusable_gridcell0, available_segments
 
 if __name__ == '__main__':
-    doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise_v1.dxf'
+    #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise_v1.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/九如東寧_可.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/岡山竹東_可.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/潭子新大茂_可.dxf'
+    #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/六甲水林.dxf'
+    doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/竹南旺大埔.dxf'
     unusable_gridcell,_, min_x, max_x, min_y, max_y, poly_feasible, wall, door, frontdoor = get_feasible_area.feasible_area(doc)
 
     SPACE_WIDTH,SPACE_HEIGHT= max_x-min_x+1, max_y-min_y+1

@@ -33,29 +33,37 @@ def slice_line_string(line_strings, specific_line):
         if line.intersects(specific_line):
             # Get the overlapping (intersection) part
             overlap = line.intersection(specific_line)
+            if isinstance(overlap, Point):
+                continue  # or handle differently if needed
 
             # Get the remaining part of the line after removing the specific_line
             remaining = line.difference(specific_line)
-
+            
             # Return the overlap and remaining parts as a list
             if isinstance(remaining, MultiLineString):
                 line_strings.remove(line)
                 line_strings.extend([overlap] + list(remaining.geoms))
                 return line_strings
+            elif remaining.is_empty:
+                line_strings.remove(line)
+                line_strings.extend([overlap])
+                return line_strings
             else:
                 line_strings.remove(line)
                 line_strings.extend([overlap, remaining])
+                print(f'PROBLEM: {line_strings}')
                 return line_strings
     return None  # No intersecting line found
 
 def rearrange_linestrings_to_polygon(linestrings):
     # Start with the first LineString
     polygon_order = [linestrings.pop(0)]
-
+    
     # While there are still linestrings left
     while linestrings:
         # Get the last LineString in the ordered list
         last_line = polygon_order[-1]
+
         last_end = last_line.coords[-1]  # End point of the last line
         
         # Find the next LineString whose start point matches the last end point
@@ -77,6 +85,7 @@ def rearrange_linestrings_to_polygon(linestrings):
 
 def find_edges_next_to_door(specified_segment, edges):
     edges = slice_line_string(edges, specified_segment)
+    print(f'AFTER SLICING: {edges}')
     # Reorder the list: move the next item to the front, and shift the previous ones to the back
     edges = rearrange_linestrings_to_polygon(edges)
     for i, edge in enumerate(edges):
@@ -100,6 +109,7 @@ def place_object_along_wall(obj_params, edges, preplaced_polygons,  specified_se
     rectangles = sorted(rectangles, key=lambda x: max(x), reverse=True)
     poly_order = [LineString([room_polygon.exterior.coords[i], room_polygon.exterior.coords[i+1]])
             for i in range(len(room_polygon.exterior.coords) - 1)]
+    print(f'BEFORE SLICING: {poly_order}')
     # Calculate lengths of each edge
     edges1, edges2 = find_edges_next_to_door(specified_segment, poly_order)
     if check_two_consecutive_short_edges(edges1):
@@ -184,7 +194,6 @@ def place_object_along_wall(obj_params, edges, preplaced_polygons,  specified_se
                         rect_with_door1 = box(start_x, y1+1, start_x + long_side, y1 + short_side + door_opening_space)
                         rect2 = box(start_x, y1 - short_side-1, start_x + long_side, y1-1)
                         rect_with_door2 = box(start_x, y1 - short_side - door_opening_space-1, start_x + long_side, y1)
-                        print(room_polygon.contains(rect_with_door1), not rect1.intersects(preplaced_union), all(not rect_with_door1.intersects(p) for p in placements))
                         if room_polygon.contains(rect_with_door1) and not rect1.intersects(preplaced_union) and all(not rect_with_door1.intersects(p) for p in placements):
                             print('9')
                             placements.append(rect1)
@@ -252,10 +261,11 @@ def create_dict_from_polygons(polygons, obj_params):
 
 
 if __name__ == '__main__':
-    doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise_v1.dxf'
+    #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise_v1.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/九如東寧_可.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/岡山竹東_可.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/潭子新大茂_可.dxf'
+    doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/六甲水林.dxf'
     unusable_gridcell,unusable_gridcell_dict, min_x, max_x, min_y, max_y, poly_feasible, wall, door, frontdoor = get_feasible_area.feasible_area(doc)
     print(poly_feasible)
     # Extract points from the input string using regular expression
