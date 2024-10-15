@@ -6,7 +6,6 @@ import matplotlib
 from tools import get_feasible_area
 from tools import coordinate_flipping as flip
 from tools import get_feasible_area
-from dxf_tools import dxf_manipulation
 from shapely import affinity
 import re
 from shapely.ops import unary_union
