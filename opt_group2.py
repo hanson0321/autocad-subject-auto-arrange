@@ -1,5 +1,4 @@
-import gurobipy as gp
-from gurobipy import GRB
+from ortools.sat.python import cp_model
 import time
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -15,10 +14,22 @@ DualReductions = 0
 
 
 def middle_object(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_gridcell):
-        # Create a Gurobi model
+    for key, value in unusable_gridcell.items():
+        value['x'] = int(value['x'])
+        value['y'] = int(value['y'])
+        value['w'] = int(value['w'])
+        value['h'] = int(value['h'])
+    for item in unusable_gridcell.values():
+        name = item.get('name')  # Use get to avoid KeyError
+        if name == '前櫃檯':
+            fixed_rect_x = item['x']
+            fixed_rect_y = item['y']
+            fixed_rect_width = item['w']
+            fixed_rect_height = item['h']
+            print(fixed_rect_x,fixed_rect_y,fixed_rect_width,fixed_rect_height)
+
     start_time = time.time()
-    model = gp.Model("layout_generation_front desk")
-    model.params.NonConvex = 2
+    model = cp_model.CpModel()
 
     num_objects = len(obj_params)
     num_unusable_cells = len(unusable_gridcell)
@@ -38,154 +49,69 @@ def middle_object(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_g
             #print(shelf)
     
 
-    p, q, s, t, orientation = {}, {}, {}, {}, {}
-    x, y, w, h, select, T = {}, {}, {}, {}, {}, {}
+    s, t = {}, {}
+    x, y, w, h = {}, {}, {}, {}
     # Binary variables
     for i in range(num_optgroup2):
-        for j in range(num_optgroup2):
-            if i != j:
-                p[i, j] = model.addVar(vtype=GRB.BINARY, name=f"p_{i}_{j}")
-                q[i, j] = model.addVar(vtype=GRB.BINARY, name=f"q_{i}_{j}")
         for k in range(num_unusable_cells):
-            s[i, k] = model.addVar(vtype=GRB.BINARY, name=f"s_{i}_{k}")
-            t[i, k] = model.addVar(vtype=GRB.BINARY, name=f"t_{i}_{k}")
-        orientation[i] = model.addVar(vtype=GRB.BINARY, name=f"orientation_{i}")
-
-    # Dimension variables
-    for i in range(num_optgroup2):
-        x[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"x_{i}")
-        y[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"y_{i}")
-        w[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"w_{i}")
-        h[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"h_{i}")
-
-        for k in range(4):
-            select[i,k] = model.addVar(vtype=GRB.BINARY, name=f"select_{i,k}")
+            s[(i, k)] = model.NewBoolVar(f"s_{i}_{k}")
+            t[(i, k)] = model.NewBoolVar(f"t_{i}_{k}")
     
-        for j in range(num_optgroup2):
-            T[i,j] = model.addVar(vtype=GRB.CONTINUOUS, name=f"T_{i,j}")
-
+    # Dimension variables
+    x = [model.NewIntVar(0, SPACE_WIDTH, f'x_{i}') for i in range(num_optgroup2)]
+    y = [model.NewIntVar(0, SPACE_HEIGHT, f'y_{i}') for i in range(num_optgroup2)]
+    w = [model.NewIntVar(0, SPACE_WIDTH, f'w_{i}') for i in range(num_optgroup2)]
+    h = [model.NewIntVar(0, SPACE_HEIGHT, f'h_{i}') for i in range(num_optgroup2)]
 
     # Set objective
     #model.setObjective(gp.quicksum(w[i]*h[i] for i in range(num_optgroup2)), GRB.MINIMIZE)
     #model.setParam('TimeLimit', 1800)
-    model.setObjective(w[shelf]*h[shelf], GRB.MAXIMIZE)
+    product = model.NewIntVar(0, SPACE_WIDTH * SPACE_HEIGHT, f"product")
+    model.AddMultiplicationEquality(product, [w[shelf], h[shelf]])
+
+    
+    model.Maximize(product)
     # Set constraints for general specifications
 
     # Boundary constraints
     for i in range(num_optgroup2):
-        model.addConstr(x[i] + w[i] <= SPACE_WIDTH, name="Boundary constraint for x")
-        model.addConstr(y[i] + h[i] <= SPACE_HEIGHT, name="Boundary constraint for y")
-    
-    # Fixed border constraint
-    for i in range(num_optgroup2):
-        if not optgroup_2[i]['fixed_wall']:
-            pass
-        elif optgroup_2[i]['fixed_wall']== 'any':
-            # 選靠哪面牆
-            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
-            # 限制長邊靠牆
-            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((select[i,0]==1)>>(x[i]==0))
-            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
-            model.addConstr((select[i,2]==1)>>(y[i]==0))
-            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
-        elif optgroup_2[i]['fixed_wall'] == 'north':
-            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
-            # 限制長邊靠牆
-            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((select[i,0]==1)>>(x[i]==0))
-            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
-            model.addConstr((select[i,2]==1)>>(y[i]==0))
-            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
-            model.addConstr(select[i,2]==1, name="North border constraint")
-        elif optgroup_2[i]['fixed_wall']== 'south':
-            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
-            # 限制長邊靠牆
-            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((select[i,0]==1)>>(x[i]==0))
-            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
-            model.addConstr((select[i,2]==1)>>(y[i]==0))
-            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
-            model.addConstr(select[i,3]==1, name="South border constraint")
-        elif optgroup_2[i]['fixed_wall']== 'east':
-            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
-            # 限制長邊靠牆
-            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((select[i,0]==1)>>(x[i]==0))
-            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
-            model.addConstr((select[i,2]==1)>>(y[i]==0))
-            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
-            model.addConstr(select[i,1]==1, name="East border constraint")
-        elif optgroup_2[i]['fixed_wall']== 'west':
-            model.addConstr(select[i,0] + select[i,1] + select[i,2] +select[i,3] == 1)
-            # 限制長邊靠牆
-            model.addConstr((select[i,0] + select[i,1])*(1-orientation[i]) + (select[i,2] +select[i,3])*orientation[i] == 1)
-            model.addConstr((select[i,0]==1)>>(x[i]==0))
-            model.addConstr((select[i,1]==1)>>(x[i]+min(optgroup_2[i]['w_h']) == SPACE_WIDTH))
-            model.addConstr((select[i,2]==1)>>(y[i]==0))
-            model.addConstr((select[i,3]==1)>>(y[i]+min(optgroup_2[i]['w_h']) == SPACE_HEIGHT))
-            model.addConstr(select[i,0]==1, name="West border constraint")
-
-    
-    # Non-intersecting with aisle constraint
-    for i in range(num_optgroup2):
-        for j in range(num_optgroup2):
-            if i != j:
-                model.addConstr(x[i] + w[i] + AISLE_SPACE <= x[j] + SPACE_WIDTH * (p[i,j] + q[i,j]), name="Non-intersecting Constraint 1")
-                model.addConstr(y[i] + h[i] + AISLE_SPACE <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j]), name="Non-intersecting Constraint 2")
-                model.addConstr(x[j] + w[j] + AISLE_SPACE <= x[i] + SPACE_WIDTH * (1 - p[i,j] + q[i,j]), name = "Non-intersecting Constraint 3")
-                model.addConstr(y[j] + h[j] + AISLE_SPACE <= y[i] + SPACE_HEIGHT * (2 - p[i,j] - q[i,j]), name = "Non-intersecting Constraint 4")
+        model.Add(x[i] + w[i] <= SPACE_WIDTH)
+        model.Add(y[i] + h[i] <= SPACE_HEIGHT)
                 
-
     # Length constraint
-    for i in range(num_optgroup2):
-        if i != shelf:
-            model.addConstr(w[i]==[min(optgroup_2[i]['w_h']),max(optgroup_2[i]['w_h'])] , name="Length Constraint 1")
-            model.addConstr(h[i] == [min(optgroup_2[i]['w_h']), max(optgroup_2[i]['w_h'])], name="Height Constraint 2")
-   
-    model.addConstr(w[shelf]<=SPACE_WIDTH, name="Shelf area 1")
-    model.addConstr(h[shelf]<=SPACE_HEIGHT, name="Shelf area2")
+    model.Add(w[i]<=SPACE_WIDTH)
+    model.Add(h[i]<=SPACE_HEIGHT)
 
     # Unusable grid cell constraint
     for i in range(num_optgroup2):
         for k in range(num_unusable_cells):
-            model.addConstr(x[i] >= unusable_gridcell[k]['x']+ unusable_gridcell[k]['w'] + 1 - SPACE_WIDTH * (s[i,k] + t[i,k]), name="Unusable grid cell 1")
-            model.addConstr(unusable_gridcell[k]['x'] >= x[i] + w[i] - SPACE_WIDTH * (1 + s[i,k] - t[i,k]), name="Unusable grid cell 2")
-            model.addConstr(y[i] >= unusable_gridcell[k]['y'] + unusable_gridcell[k]['h'] + 1 - SPACE_HEIGHT * (1 - s[i,k] + t[i,k]), name = "Unusable grid cell 3")
-            model.addConstr(unusable_gridcell[k]['y'] >= y[i] + h[i] - SPACE_HEIGHT * (2 - s[i,k] - t[i,k]), name = "Unusable grid cell 4")
-    # Orientation constraint
-    for i in range(num_optgroup2):
-        if i!= shelf:
-            model.addConstr(w[i] == h[i]*((max(optgroup_2[i]['w_h'])/min(optgroup_2[i]['w_h']))*orientation[i]
-                                          +(min(optgroup_2[i]['w_h'])/max(optgroup_2[i]['w_h']))*(1-orientation[i])))
+            model.Add(x[i] >= unusable_gridcell[k]['x']+ unusable_gridcell[k]['w'] + 1 - SPACE_WIDTH * (s[i,k] + t[i,k]))
+            model.Add(unusable_gridcell[k]['x'] >= x[i] + w[i] - SPACE_WIDTH * (1 + s[i,k] - t[i,k]))
+            model.Add(y[i] >= unusable_gridcell[k]['y'] + unusable_gridcell[k]['h'] + 1 - SPACE_HEIGHT * (1 - s[i,k] + t[i,k]))
+            model.Add(unusable_gridcell[k]['y'] >= y[i] + h[i] - SPACE_HEIGHT * (2 - s[i,k] - t[i,k]))
     
-    
+    # Create the solver
+    solver = cp_model.CpSolver()
 
-    # Optimize the model
-    model.optimize()
+    # Solve the model
+    status = solver.Solve(model)
     end_time = time.time()
     result = {}
     shelf_area = {}
 
     # Print objective value and runtime
-    if model.status == GRB.OPTIMAL:
+    if status == cp_model.OPTIMAL:
         print(f"Runtime: {end_time - start_time} seconds")
         print("Optimal solution found!")
         for i in range(num_optgroup2):
-            result.update({i:{'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X, 'name': optgroup_2[i]['name']}})
+            result.update({i:{'x':solver.Value(x[i]), 'y':solver.Value(y[i]), 'w':solver.Value(w[i]), 'h':solver.Value(h[i]), 'name': optgroup_2[i]['name']}})
             print(f"{result[i]['name']} : x={result[i]['x']}, y={result[i]['y']}, w={result[i]['w']}, h={result[i]['h']}")
             if i == shelf:
-                shelf_area.update({'x':x[i].X, 'y':y[i].X, 'w':w[i].X, 'h':h[i].X})
+                shelf_area.update({'x':solver.Value(x[i]), 'y':solver.Value(y[i]), 'w':solver.Value(w[i]), 'h':solver.Value(h[i])})
             
-    elif model.status == GRB.INFEASIBLE:
-        print("The problem is infeasible. Review your constraints.")
     else:
         print("No solution found.")
-        
-        model.computeIIS()
-        for c in model.getConstrs():
-            if c.IISConstr: print(f'\t{c.constrname}: {model.getRow(c)} {c.Sense} {c.RHS}')
-        pass
+
     return result, shelf_area, shelf
 
 

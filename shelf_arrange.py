@@ -1,113 +1,101 @@
-import gurobipy as gp
-from gurobipy import GRB
+from ortools.sat.python import cp_model
 import time
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib
 from tools import get_feasible_area
-from tools import KPtest
 from tools import coordinate_flipping as flip
 from tools import get_feasible_area
 import dxf_to_dict_processor
 import re
 
 def layout_with_numeric_value(shelf_params, priority_shelves, SPACE_WIDTH, SPACE_HEIGHT, AISLE_SPACE):
-    model = gp.Model("layout_generation_front_desk")
-    model.params.NonConvex = 2
-    
+    # Create the model
+    model = cp_model.CpModel()
+
     num_shelf = len(shelf_params)
-    unusable_gridcell = {0:{'x':0, 'y':0, 'w':470,'h':176}}
+    unusable_gridcell = {0: {'x': 0, 'y': 0, 'w': 470, 'h': 176}}
     num_unusable_cells = len(unusable_gridcell)
-    
-    p, q, s, t = {}, {}, {}, {}
-    x, y, w, h, select = {}, {}, {}, {}, {}
-    
-    # Binary variables for selecting shelves
-    for i in range(num_shelf):
-        select[i] = model.addVar(vtype=GRB.BINARY, name=f"select_{i}")
-    
-    # Non-overlapping variables
+
+    # Define variables
+    select = [model.NewBoolVar(f'select_{i}') for i in range(num_shelf)]
+    x = [model.NewIntVar(0, SPACE_WIDTH, f'x_{i}') for i in range(num_shelf)]
+    y = [model.NewIntVar(0, SPACE_HEIGHT, f'y_{i}') for i in range(num_shelf)]
+    w = [model.NewIntVar(0, SPACE_WIDTH, f'w_{i}') for i in range(num_shelf)]
+    h = [model.NewIntVar(0, SPACE_HEIGHT, f'h_{i}') for i in range(num_shelf)]
+
+    # Non-overlapping variables (analogous to p and q)
+    p, q, s , t = {}, {}, {}, {}
+
     for i in range(num_shelf):
         for j in range(num_shelf):
             if i != j:
-                p[i, j] = model.addVar(vtype=GRB.BINARY, name=f"p_{i}_{j}")
-                q[i, j] = model.addVar(vtype=GRB.BINARY, name=f"q_{i}_{j}")
+                p[(i, j)] = model.NewBoolVar(f'p_{i}_{j}')
+                q[(i, j)] = model.NewBoolVar(f'q_{i}_{j}')
         for k in range(num_unusable_cells):
-            s[i, k] = model.addVar(vtype=GRB.BINARY, name=f"s_{i}_{k}")
-            t[i, k] = model.addVar(vtype=GRB.BINARY, name=f"t_{i}_{k}")
-    
-    # Dimension variables
-    for i in range(num_shelf):
-        x[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"x_{i}")
-        y[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"y_{i}")
-        w[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"w_{i}")
-        h[i] = model.addVar(vtype=GRB.CONTINUOUS, name=f"h_{i}")
-        for k in range(4):
-            select[i,k] = model.addVar(vtype=GRB.BINARY, name=f"select_{i,k}")
+            s[(i, k)] = model.NewBoolVar(f"s_{i}_{k}")
+            t[(i, k)] = model.NewBoolVar(f"t_{i}_{k}")
+
+
+
     # Unusable grid cell constraint
     for i in range(num_shelf):
         for k in range(num_unusable_cells):
-            model.addConstr(x[i] >= unusable_gridcell[k]['x']+ unusable_gridcell[k]['w'] + 1 - SPACE_WIDTH * (s[i,k] + t[i,k]), name="Unusable grid cell 1")
-            model.addConstr(unusable_gridcell[k]['x'] >= x[i] + w[i] - SPACE_WIDTH * (1 + s[i,k] - t[i,k]), name="Unusable grid cell 2")
-            model.addConstr(y[i] >= unusable_gridcell[k]['y'] + unusable_gridcell[k]['h'] + 1 - SPACE_HEIGHT * (1 - s[i,k] + t[i,k]), name = "Unusable grid cell 3")
-            model.addConstr(unusable_gridcell[k]['y'] >= y[i] + h[i] - SPACE_HEIGHT * (2 - s[i,k] - t[i,k]), name = "Unusable grid cell 4")
-    '''
-    model.setObjective(
-        gp.quicksum(select[i] * shelf_params[i]['amount'] * (1 + (1 if i in priority_shelves else 0)) 
-                     for i in range(num_shelf)), 
-        GRB.MAXIMIZE
-    )
-    '''
-    model.setObjective(
-                        (gp.quicksum(select[i] * (10 if i in priority_shelves else 3) for i in range(num_shelf)))-
-                        0.01*(gp.quicksum(x[i] + y[i] for i in range(num_shelf))),
-                        GRB.MAXIMIZE)
+            model.Add(x[i] >= unusable_gridcell[k]['x']+ unusable_gridcell[k]['w'] + 1 - SPACE_WIDTH * (s[i,k] + t[i,k])).OnlyEnforceIf(select[i])
+            model.Add(unusable_gridcell[k]['x'] >= x[i] + w[i] - SPACE_WIDTH * (1 + s[i,k] - t[i,k])).OnlyEnforceIf(select[i])
+            model.Add(y[i] >= unusable_gridcell[k]['y'] + unusable_gridcell[k]['h'] + 1 - SPACE_HEIGHT * (1 - s[i,k] + t[i,k])).OnlyEnforceIf(select[i])
+            model.Add(unusable_gridcell[k]['y'] >= y[i] + h[i] - SPACE_HEIGHT * (2 - s[i,k] - t[i,k])).OnlyEnforceIf(select[i])
+    
     # Boundary constraints
     for i in range(num_shelf):
-        model.addConstr(x[i] + w[i] <= SPACE_WIDTH, name="Boundary constraint for x")
-        model.addConstr(y[i] + h[i] <= SPACE_HEIGHT-60, name="Boundary constraint for y")
+        model.Add(x[i] + w[i] <= SPACE_WIDTH).OnlyEnforceIf(select[i])
+        model.Add(y[i] + h[i]<= SPACE_HEIGHT - 60).OnlyEnforceIf(select[i])
     
-    # Non-intersecting constraints (only applied if both shelves are selected)
+    # Non-intersecting constraints
     for i in range(num_shelf):
         for j in range(num_shelf):
             if i != j:
-                model.addConstr(x[i] + w[i] + AISLE_SPACE <= x[j] + SPACE_WIDTH * (p[i,j] + q[i,j]) + SPACE_WIDTH * (1 - select[j]), 
-                                name=f"Non_intersect_1_{i}_{j}")
-                model.addConstr(y[i] + h[i] + AISLE_SPACE <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j]) + SPACE_HEIGHT * (1 - select[j]), 
-                                name=f"Non_intersect_2_{i}_{j}")
-                model.addConstr(x[j] + w[j] + AISLE_SPACE <= x[i] + SPACE_WIDTH * (1 - p[i,j] + q[i,j]) + SPACE_WIDTH * (1 - select[i]), 
-                                name=f"Non_intersect_3_{i}_{j}")
-                model.addConstr(y[j] + h[j] + AISLE_SPACE <= y[i] + SPACE_HEIGHT * (2 - p[i,j] - q[i,j]) + SPACE_HEIGHT * (1 - select[i]), 
-                                name=f"Non_intersect_4_{i}_{j}")
+                model.Add(x[i] + w[i] + AISLE_SPACE <= x[j] + SPACE_WIDTH * (p[i,j] + q[i,j]) + SPACE_WIDTH * (1 - select[j]))
+                model.Add(y[i] + h[i] + AISLE_SPACE <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j]) + SPACE_HEIGHT * (1 - select[j]))
+                model.Add(x[j] + w[j] + AISLE_SPACE <= x[i] + SPACE_WIDTH * (1 - p[i,j] + q[i,j]) + SPACE_WIDTH * (1 - select[i]))
+                model.Add(y[j] + h[j] + AISLE_SPACE <= y[i] + SPACE_HEIGHT * (2 - p[i,j] - q[i,j]) + SPACE_HEIGHT * (1 - select[i]))
 
-    
-    # Length and height constraints for shelves
+    # Width and height constraints
     for i in range(num_shelf):
-        model.addConstr(w[i] == max(shelf_params[i]['w_h']), name=f"Width_{i}")
-        model.addConstr(h[i] == min(shelf_params[i]['w_h']), name=f"Height_{i}")
-
-    model.addConstr(gp.quicksum(select[i] for i in priority_shelves) >= 1, "Min_Priority_Shelves")
-
+        model.Add(w[i] == max(shelf_params[i]['w_h']))
+        model.Add(h[i] == min(shelf_params[i]['w_h']))
     
-    # Constraint to enforce the numeric sum of selected shelves is between 25 and 35
-    model.addConstr(gp.quicksum(select[i] * shelf_params[i]['amount'] for i in range(num_shelf)) >= 25, "Min_Sum")
-    model.addConstr(gp.quicksum(select[i] * shelf_params[i]['amount'] for i in range(num_shelf)) <= 35, "Max_Sum")
-
-
-    # Optimize the model
-    model.optimize()
+    # Priority constraint
+    model.Add(sum(select[i] for i in priority_shelves) >= 1)
     
+    # Summation constraints
+    model.Add(sum(select[i] * shelf_params[i]['amount'] for i in range(num_shelf)) >= 25)
+    model.Add(sum(select[i] * shelf_params[i]['amount'] for i in range(num_shelf)) <= 35)
+    
+    # Objective function: Maximize priority shelf selection while minimizing distance
+    model.Maximize(
+        sum(select[i] * (10 if i in priority_shelves else 3) for i in range(num_shelf))
+        - 0.01 * sum(x[i] + y[i] for i in range(num_shelf))
+    )
+
+    # Create the solver
+    solver = cp_model.CpSolver()
+
+    # Solve the model
+    status = solver.Solve(model)
+
+
     # Collect results
     result = {}
     tmp = 0
-    if model.status == GRB.OPTIMAL:
+    if status == cp_model.OPTIMAL:
         for i in range(num_shelf):
-            if select[i].X > 0.5:
-                result[tmp] = {
-                    'x': x[i].X,
-                    'y': y[i].X,
-                    'w': w[i].X,
-                    'h': h[i].X,
+            if solver.BooleanValue(select[i]):
+                result[i] = {
+                    'x': solver.Value(x[i]),
+                    'y': solver.Value(y[i]),
+                    'w': solver.Value(w[i]),
+                    'h': solver.Value(h[i]),
                     'number': shelf_params[i]['amount'],
                     'name': shelf_params[i]['name']
                 }
@@ -116,14 +104,13 @@ def layout_with_numeric_value(shelf_params, priority_shelves, SPACE_WIDTH, SPACE
         tmp+=1
         result.update({tmp:{'x':0,'y':0,'w':360,'h':66,'name':'FF'}})
     else:
-        print("No feasible solution found.")
+        print("Model is infeasible")
+
+
     return result
 
 
-def layout_plot(obj_params, result):
-    num_objects = len(obj_params)
-    # Define total space dimensions
-    total_space = {'width': SPACE_WIDTH, 'height': SPACE_HEIGHT}
+def layout_plot(result):
 
     # Create a new figure
     plt.figure(figsize=(8, 8))
@@ -147,8 +134,8 @@ def layout_plot(obj_params, result):
 
 
     # Set plot limits and labels
-    plt.xlim(0, 1400)
-    plt.ylim(0,1000)
+    plt.xlim(0, SPACE_WIDTH)
+    plt.ylim(0,SPACE_HEIGHT)
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.title('Space Layout')
@@ -225,5 +212,4 @@ if __name__ == '__main__':
                     21:{'w_h':[678,78],'amount':15, 'name':'678x78'}}
     result = layout_with_numeric_value(shelf_params,priority_shelves,  1400, 1000, AISLE_SPACE)
 
-    layout_plot(shelf_params, result)
-
+    layout_plot(result)
