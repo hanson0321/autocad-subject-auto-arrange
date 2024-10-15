@@ -1,12 +1,9 @@
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, box, LineString
-import gurobipy as gp
-from gurobipy import GRB
 import time
 import matplotlib.patches as patches
 import matplotlib
 from tools import get_feasible_area
-from tools import KPtest
 from tools import coordinate_flipping as flip
 from tools import get_feasible_area
 from dxf_tools import dxf_manipulation
@@ -105,7 +102,6 @@ def place_object_along_wall(obj_params, edges, preplaced_polygons,  specified_se
                     print('5')
                     placed_rect.append([rect_width, rect_height])
                     rectangles = [i for i in rectangles if i not in placed_rect]
-                    print(edge)
                 if not placed:
                     print('6')
                     rectangles = [i for i in rectangles if i not in placed_rect]
@@ -132,7 +128,6 @@ def place_object_along_wall(obj_params, edges, preplaced_polygons,  specified_se
                         rect_with_door1 = box(start_x, y1+1, start_x + long_side, y1 + short_side + door_opening_space)
                         rect2 = box(start_x, y1 - short_side-1, start_x + long_side, y1-1)
                         rect_with_door2 = box(start_x, y1 - short_side - door_opening_space-1, start_x + long_side, y1)
-                        print(room_polygon.contains(rect_with_door1), not rect1.intersects(preplaced_union), all(not rect_with_door1.intersects(p) for p in placements))
                         if room_polygon.contains(rect_with_door1) and not rect1.intersects(preplaced_union) and all(not rect_with_door1.intersects(p) for p in placements):
                             print('9')
                             placements.append(rect1)

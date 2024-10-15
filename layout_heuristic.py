@@ -109,7 +109,7 @@ def layout_plot(obj_params, result0, result0102, result1, result2, shelf_placeme
         y = object_info['y']
         w = object_info['w']
         h = object_info['h']
-        '''
+        
         if object_id ==0:
         
             plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_name[object_id]))
@@ -121,7 +121,7 @@ def layout_plot(obj_params, result0, result0102, result1, result2, shelf_placeme
         else:
             plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_info['name']))
             plt.text(x + w/2, y + h/2, object_info['name'], ha='center', va='center', color='red', fontsize=12)  
-        '''
+        
         plt.gca().add_patch(plt.Rectangle((x, y), w, h, fill=None, edgecolor='black', label=object_info['name']))
         plt.text(x + w/2, y + h/2, object_info['name'], ha='center', va='center', color='red', fontsize=12)
         
@@ -148,12 +148,13 @@ def layout_plot(obj_params, result0, result0102, result1, result2, shelf_placeme
 
 
 if __name__ == '__main__':
-    #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise_v1.dxf'
+    doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise_v1.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/九如東寧_可.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/岡山竹東_可.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/潭子新大茂_可.dxf'
-    doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/六甲水林.dxf'
+    #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/六甲水林.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/竹南旺大埔.dxf'
+    #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/§T≠´´H¶w_™≈_0909.dxf'
     unusable_gridcell,unusable_gridcell_dict, min_x, max_x, min_y, max_y, poly_feasible, wall, door, frontdoor = get_feasible_area.feasible_area(doc)
     print(poly_feasible)
     # Extract points from the input string using regular expression

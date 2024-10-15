@@ -185,7 +185,6 @@ def place_counter_along_wall(room_polygon, rectangles, preplaced_polygons, speci
         if not rectangles:
             print('All rectangles placed!')
             break
-    print(placed_edge)
     x1, y1 = placed_edge.coords[0]
     x2, y2 = placed_edge.coords[1]
     point1 = Point(x1-1, (y1+y2)/2)
@@ -200,7 +199,6 @@ def place_counter_along_wall(room_polygon, rectangles, preplaced_polygons, speci
             counter_placement = 'north'
         else:
             counter_placement = 'south'
-    print(f'HERE{placements, counter_placement}')
     return placements, counter_placement, available_segments
 
 def counter_placements(room_polygon, obj_params, counter_space, lineup_space, specified_segment, preplaced, min_x, max_x, min_y, max_y):
@@ -352,7 +350,8 @@ if __name__ == '__main__':
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/岡山竹東_可.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/潭子新大茂_可.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/六甲水林.dxf'
-    doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/竹南旺大埔.dxf'
+    #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/竹南旺大埔.dxf'
+    doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/§jµo¶Xµo_™≈_0909.dxf'
     unusable_gridcell,_, min_x, max_x, min_y, max_y, poly_feasible, wall, door, frontdoor = get_feasible_area.feasible_area(doc)
 
     SPACE_WIDTH,SPACE_HEIGHT= max_x-min_x+1, max_y-min_y+1

@@ -1,13 +1,10 @@
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, box, LineString
-import gurobipy as gp
-from gurobipy import GRB
 import time
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib
 from tools import get_feasible_area
-from tools import KPtest
 from tools import coordinate_flipping as flip
 from tools import get_feasible_area
 from dxf_tools import dxf_manipulation
@@ -44,105 +41,101 @@ def place_object_along_wall(obj_params, edges, preplaced_polygons, room_polygon,
     preplaced_union = unary_union(preplaced_polygons)
     placements = []
     placement_with_door = []
-    len_object = 0
     for edge in available_segments:
         print(f'Placing on {edge}')
-        len_object = 0
-        print(f'Remaining rectangles to place: {rectangles}')
-        while (len_object/edge.length)<=0.6:
-            new_segments = []
-            placed_rect = []
-            x1, y1 = edge.coords[0]
-            x2, y2 = edge.coords[1]
-            
-            if x1 == x2:  # Vertical edge
-                for rect_width, rect_height in rectangles:
-                    placed = False
-                    print(f'Trying to place rectangle: {[rect_width, rect_height]}...')
-                    long_side = max(rect_width, rect_height)
-                    short_side = min(rect_width, rect_height)
-                    if long_side <= abs(y2 - y1):
-                        # Try to place the rectangle along the vertical segment
-                        min_y = min(y1, y2)
-                        max_y = max(y1, y2)
-                        start = random.randint(int(min_y), int(max_y - long_side) + 1)
-                        for i in range(int(min_y), int(max_y - long_side) + 1):
-                            start_y = (start + i) % (int(max_y - long_side) + 1)
-                            rect1 = box(x1+1, start_y, x1 + short_side+1, start_y + long_side)
-                            rect_with_door1 = box(x1, start_y, x1 + short_side + door_opening_space, start_y + long_side)
-                            rect2 = box(x1 - short_side-1, start_y, x1-1, start_y + long_side)
-                            rect_with_door2 = box(x1 - short_side - door_opening_space, start_y, x1, start_y + long_side)
-                            if room_polygon.contains(rect_with_door1) and not rect1.intersects(preplaced_union) and all(not rect_with_door1.intersects(p) for p in placements):
-                                print('3')
-                                placements.append(rect1)
-                                placement_with_door.append(rect_with_door1)
-                                placed = True
-                                break
-                            elif room_polygon.contains(rect_with_door2) and not rect2.intersects(preplaced_union) and all(not rect_with_door2.intersects(p) for p in placements):
-                                print('4')
-                                placements.append(rect2)
-                                placement_with_door.append(rect_with_door2)
-                                placed = True
-                                break 
-                    if placed:
-                        print('Rectangle plcaed!')
-                        available_segments[edge] = [seg for seg in new_segments if seg.length > 0]
-                        placed_rect.append([rect_width, rect_height])
-                        rectangles = [i for i in rectangles if i not in placed_rect]
-                        break
-                    if not placed:
-                        rectangles = [i for i in rectangles if i not in placed_rect]
-                        print('Moving on to the next rectangle...')
-                        break
+        new_segments = []
+        placed_rect = []
+        x1, y1 = edge.coords[0]
+        x2, y2 = edge.coords[1]            
+        if x1 == x2:  # Vertical edge
+            print('1')
+            for rect_width, rect_height in rectangles:
+                placed = False
+                # print(f'Trying to place rectangle: {[rect_width, rect_height]}...')
+                long_side = max(rect_width, rect_height)
+                short_side = min(rect_width, rect_height)
+                if long_side <= abs(y2 - y1):
+                    print('2')
+                    # Try to place the rectangle along the vertical segment
+                    min_y = min(y1, y2)
+                    max_y = max(y1, y2)
+                    start = random.randint(int(min_y), int(max_y - long_side) + 1)
+                    for i in range(int(min_y), int(max_y - long_side) + 1):
+                        start_y = (start + i) % (int(max_y - long_side) + 1)
+                        rect1 = box(x1+1, start_y, x1 + short_side+1, start_y + long_side)
+                        rect_with_door1 = box(x1, start_y, x1 + short_side + door_opening_space, start_y + long_side)
+                        rect2 = box(x1 - short_side-1, start_y, x1-1, start_y + long_side)
+                        rect_with_door2 = box(x1 - short_side - door_opening_space, start_y, x1, start_y + long_side)
+                        if room_polygon.contains(rect_with_door1) and not rect1.intersects(preplaced_union) and all(not rect_with_door1.intersects(p) for p in placements):
+                            print('3')
+                            placements.append(rect1)
+                            placement_with_door.append(rect_with_door1)
+                            placed = True
+                            break
+                        elif room_polygon.contains(rect_with_door2) and not rect2.intersects(preplaced_union) and all(not rect_with_door2.intersects(p) for p in placements):
+                            print('4')
+                            placements.append(rect2)
+                            placement_with_door.append(rect_with_door2)
+                            placed = True
+                            break 
+                if placed:
+                    print('5')
+                    placed_rect.append([rect_width, rect_height])
+                    rectangles = [i for i in rectangles if i not in placed_rect]
+                if not placed:
+                    print('6')
+                    rectangles = [i for i in rectangles if i not in placed_rect]
+                    # print(f'New list: {rectangles}')
+                    # print('Moving on to the next rectangle...')
+                    break
 
-            elif y1 == y2:  # Horizontal edge
-                for rect_width, rect_height in rectangles:
-                    print(f'Trying to place rectangle: {[rect_width, rect_height]}...')
-                    placed = False
-                    long_side = max(rect_width, rect_height)
-                    short_side = min(rect_width, rect_height)
-                    if long_side <= abs(x2 - x1):
-                        # Try to place the rectangle along the horizontal segment
-                        min_x = min(x1, x2)
-                        max_x = max(x1, x2)
-                        if y1 < (space_min_y+space_max_y)/2:
-                            start = random.randint(int(min_x), int(max_x - long_side) + 1)
-                            for i in range(int(min_x), int(max_x - long_side) + 1):
-                                start_x = (start + i) % (int(max_x - long_side) + 1)
-                                rect1 = box(start_x, y1+1, start_x + long_side, y1 + short_side+1)
-                                rect_with_door1 = box(start_x, y1+1, start_x + long_side, y1 + short_side + door_opening_space)
-                                rect2 = box(start_x, y1 - short_side-1, start_x + long_side, y1-1)
-                                rect_with_door2 = box(start_x, y1 - short_side - door_opening_space-1, start_x + long_side, y1)
-                                print(room_polygon.contains(rect_with_door1), not rect1.intersects(preplaced_union), all(not rect_with_door1.intersects(p) for p in placements))
-                                if room_polygon.contains(rect_with_door1) and not rect1.intersects(preplaced_union) and all(not rect_with_door1.intersects(p) for p in placements):
-                                    print('9')
-                                    placements.append(rect1)
-                                    placement_with_door.append(rect_with_door1)
-                                    placed = True
-                                    break
-                                elif room_polygon.contains(rect_with_door2) and not rect2.intersects(preplaced_union) and all(not rect_with_door2.intersects(p) for p in placements):
-                                    print('10')
-                                    placements.append(rect2)
-                                    placement_with_door.append(rect_with_door2)
-                                    placed = True
-                                    break                         
-                        if placed:
-                            print('Rectangle plcaed!')
-                            available_segments[edge] = [seg for seg in new_segments if seg.length > 0]
-                            placed_rect.append([rect_width, rect_height])
-                            rectangles = [i for i in rectangles if i not in placed_rect]
+        elif y1 == y2:  # Horizontal edge
+            print('7')
+            min_x = min(x1, x2)
+            max_x = max(x1, x2)
+            for rect_width, rect_height in rectangles:
+                # print(f'Trying to place rectangle: {[rect_width, rect_height]}...')
+                placed = False
+                long_side = max(rect_width, rect_height)
+                short_side = min(rect_width, rect_height)
+                print(f'Placing rectangle: [{rect_width}, {rect_height}]')
+                if long_side <= abs(x2 - x1):
+                    print('8')
+                    start = random.randint(int(min_x), int(max_x - long_side) + 1)
+                    for i in range(int(min_x), int(max_x - long_side) + 1):
+                        start_x = (start + i) % (int(max_x - long_side) + 1)
+                        rect1 = box(start_x, y1+1, start_x + long_side, y1 + short_side+1)
+                        rect_with_door1 = box(start_x, y1+1, start_x + long_side, y1 + short_side + door_opening_space)
+                        rect2 = box(start_x, y1 - short_side-1, start_x + long_side, y1-1)
+                        rect_with_door2 = box(start_x, y1 - short_side - door_opening_space-1, start_x + long_side, y1)
+                        if room_polygon.contains(rect_with_door1) and not rect1.intersects(preplaced_union) and all(not rect_with_door1.intersects(p) for p in placements):
+                            print('9')
+                            placements.append(rect1)
+                            placement_with_door.append(rect_with_door1)
+                            placed = True
                             break
-                        if not placed:
-                            rectangles = [i for i in rectangles if i not in placed_rect]
-                            print('Moving on to the next rectangle...')
-                            break
-            
-            len_object+=long_side
-            print(f'Placed rectangls: {placed_rect}')
+                        elif room_polygon.contains(rect_with_door2) and not rect2.intersects(preplaced_union) and all(not rect_with_door2.intersects(p) for p in placements):
+                            print('10')
+                            placements.append(rect2)
+                            placement_with_door.append(rect_with_door2)
+                            placed = True
+                            break           
+                if placed:
+                    print('11')
+                    # print('Rectangle plcaed!')
+                    placed_rect.append([rect_width, rect_height])
+                    rectangles = [i for i in rectangles if i not in placed_rect]
+                if not placed:
+                    print('12')
+                    rectangles = [i for i in rectangles if i not in placed_rect]
+                    # print(f'New list: {rectangles}')
+                    # print('Moving on to the next rectangle...')
+                    break
+            # print(f'Placed rectangls: {placed_rect}')
             if not rectangles:
+                print('13')
                 rectangles = [i for i in rectangles if i not in placed_rect]
                 break
-            
         if rectangles:
             print('Moving on to the next edge...')
             continue

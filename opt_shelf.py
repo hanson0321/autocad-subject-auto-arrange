@@ -1,5 +1,3 @@
-import gurobipy as gp
-from gurobipy import GRB
 import time
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches

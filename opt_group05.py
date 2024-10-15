@@ -1,12 +1,9 @@
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, box, LineString, MultiLineString, Point
-import gurobipy as gp
-from gurobipy import GRB
 import time
 import matplotlib.patches as patches
 import matplotlib
 from tools import get_feasible_area
-from tools import KPtest
 from tools import coordinate_flipping as flip
 from tools import get_feasible_area
 from dxf_tools import dxf_manipulation
@@ -51,7 +48,6 @@ def slice_line_string(line_strings, specific_line):
             else:
                 line_strings.remove(line)
                 line_strings.extend([overlap, remaining])
-                print(f'PROBLEM: {line_strings}')
                 return line_strings
     return None  # No intersecting line found
 
@@ -85,7 +81,6 @@ def rearrange_linestrings_to_polygon(linestrings):
 
 def find_edges_next_to_door(specified_segment, edges):
     edges = slice_line_string(edges, specified_segment)
-    print(f'AFTER SLICING: {edges}')
     # Reorder the list: move the next item to the front, and shift the previous ones to the back
     edges = rearrange_linestrings_to_polygon(edges)
     for i, edge in enumerate(edges):
@@ -109,15 +104,12 @@ def place_object_along_wall(obj_params, edges, preplaced_polygons,  specified_se
     rectangles = sorted(rectangles, key=lambda x: max(x), reverse=True)
     poly_order = [LineString([room_polygon.exterior.coords[i], room_polygon.exterior.coords[i+1]])
             for i in range(len(room_polygon.exterior.coords) - 1)]
-    print(f'BEFORE SLICING: {poly_order}')
     # Calculate lengths of each edge
     edges1, edges2 = find_edges_next_to_door(specified_segment, poly_order)
     if check_two_consecutive_short_edges(edges1):
         sorted_edges = edges1
-        print('edge1')
     else:
         sorted_edges = edges2
-        print('edge2')
     # Initialize available segments for each edge
     available_segments = {edge: [edge] for edge in sorted_edges}
     # Union of pre-placed polygons
@@ -167,7 +159,6 @@ def place_object_along_wall(obj_params, edges, preplaced_polygons,  specified_se
                     print('5')
                     placed_rect.append([rect_width, rect_height])
                     rectangles = [i for i in rectangles if i not in placed_rect]
-                    print(edge)
                 if not placed:
                     print('6')
                     rectangles = [i for i in rectangles if i not in placed_rect]
@@ -267,7 +258,6 @@ if __name__ == '__main__':
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/潭子新大茂_可.dxf'
     doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/六甲水林.dxf'
     unusable_gridcell,unusable_gridcell_dict, min_x, max_x, min_y, max_y, poly_feasible, wall, door, frontdoor = get_feasible_area.feasible_area(doc)
-    print(poly_feasible)
     # Extract points from the input string using regular expression
     points = re.findall(r'\d+\s\d+', str(poly_feasible).replace("POLYGON ", ""))
     # Convert points to tuples of integers
@@ -352,7 +342,6 @@ if __name__ == '__main__':
     result_0, counter_placement, unusable_gridcell0, available_segments = opt_group0.counter_placements(poly_feasible, obj_params, COUNTER_SPACING, LINEUP_SPACING, DOOR_PLACEMENT, DOOR_ENTRY, min_x, max_x, min_y, max_y)
     result_0102, unusable_gridcell0102 = opt_group0102.baseline_placements(obj_params, unusable_gridcell, min_x, max_x, min_y, max_y, wall, door, result_0, counter_placement, unusable_gridcell0, available_segments, DOOR_placement)
     preplaced_polygons = create_preplaced_polygons(unusable_gridcell0102)
-    print(preplaced_polygons)
     placements_polygon, result_05, unusable_gridcell05 = place_object_along_wall(obj_params, available_segments, preplaced_polygons, DOOR_PLACEMENT, poly_feasible, min_x, min_y, max_x, max_y, OPENDOOR_SPACING, unusable_gridcell_dict, unusable_gridcell0102)
     # print(result)
     
