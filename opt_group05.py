@@ -1,15 +1,11 @@
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, box, LineString, MultiLineString, Point
-import gurobipy as gp
-from gurobipy import GRB
 import time
 import matplotlib.patches as patches
 import matplotlib
 from tools import get_feasible_area
-from tools import KPtest
 from tools import coordinate_flipping as flip
 from tools import get_feasible_area
-from dxf_tools import dxf_manipulation
 from shapely import affinity
 import re
 from shapely.ops import unary_union
