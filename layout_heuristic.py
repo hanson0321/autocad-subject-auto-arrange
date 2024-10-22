@@ -238,23 +238,59 @@ if __name__ == '__main__':
     
     priority_shelves = [7, 8, 9,10,11, 13, 14, 15, 16, 17]
 
-    
-    result_0, counter_placement, unusable_gridcell0, available_segments = opt_group0.counter_placements(poly_feasible, obj_params, COUNTER_SPACING, LINEUP_SPACING, DOOR_PLACEMENT, DOOR_ENTRY, min_x, max_x, min_y, max_y)
-    result_0102, unusable_gridcell0102 = opt_group0102.baseline_placements(obj_params, unusable_gridcell, min_x, max_x, min_y, max_y, wall, door, result_0, counter_placement, unusable_gridcell0, available_segments, DOOR_placement)
+
+    result_0, counter_placement, unusable_gridcell0, available_segments = opt_group0.counter_placements(
+        poly_feasible, obj_params, COUNTER_SPACING, LINEUP_SPACING, DOOR_PLACEMENT, DOOR_ENTRY, min_x, max_x, min_y,
+        max_y)
+
+    # 基線放置
+    result_0102, unusable_gridcell0102 = opt_group0102.baseline_placements(
+        obj_params, unusable_gridcell, min_x, max_x, min_y, max_y, wall, door, result_0, counter_placement,
+        unusable_gridcell0, available_segments, DOOR_placement)
+
+    # 放置後的多邊形
     preplaced_polygons = opt_group05.create_preplaced_polygons(unusable_gridcell0102)
     print(preplaced_polygons)
-    _, result_05, unusable_gridcell05 = opt_group05.place_object_along_wall(obj_params, available_segments, preplaced_polygons, DOOR_PLACEMENT, poly_feasible, min_x, min_y, max_x, max_y, OPENDOOR_SPACING, unusable_gridcell_dict, unusable_gridcell0102)
+
+    # 放置物體並更新
+    _, result_05, unusable_gridcell05 = opt_group05.place_object_along_wall(
+        obj_params, available_segments, preplaced_polygons, DOOR_PLACEMENT, poly_feasible, min_x, min_y, max_x, max_y,
+        OPENDOOR_SPACING, unusable_gridcell_dict, unusable_gridcell0102)
+
+    # 繼續放置更多物體
     preplaced_polygons = opt_group08.create_preplaced_polygons(unusable_gridcell05)
-    _, result_08, unusable_gridcell08 = opt_group08.place_object_along_wall(obj_params, available_segments, preplaced_polygons,DOOR_PLACEMENT, poly_feasible, min_x, min_y, max_x, max_y, OPENDOOR_SPACING, unusable_gridcell_dict, unusable_gridcell05)
+    _, result_08, unusable_gridcell08 = opt_group08.place_object_along_wall(
+        obj_params, available_segments, preplaced_polygons, DOOR_PLACEMENT, poly_feasible, min_x, min_y, max_x, max_y,
+        OPENDOOR_SPACING, unusable_gridcell_dict, unusable_gridcell05)
+
+    # 更多物體的放置
     preplaced_polygons = opt_group1.create_preplaced_polygons(unusable_gridcell08)
-    _, result_1, unusable_gridcell1 = opt_group1.place_object_along_wall(obj_params, available_segments, preplaced_polygons,poly_feasible, min_x, min_y, max_x, max_y, OPENDOOR_SPACING, unusable_gridcell_dict, unusable_gridcell08)
-    result_2, shelf_area, shelf_id = opt_group2.middle_object(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT, unusable_gridcell1)
+    _, result_1, unusable_gridcell1 = opt_group1.place_object_along_wall(
+        obj_params, available_segments, preplaced_polygons, poly_feasible, min_x, min_y, max_x, max_y, OPENDOOR_SPACING,
+        unusable_gridcell_dict, unusable_gridcell08)
+
+    # 中央物體和貨架區的放置
+    result_2, shelf_area, shelf_id = opt_group2.middle_object(obj_params, AISLE_SPACE, SPACE_WIDTH, SPACE_HEIGHT,
+                                                              unusable_gridcell1)
     result_2.pop(shelf_id)
-    shelf_placement, unusable_gridcell2 = opt_shelf.shelf_opt(shelf_area, unusable_gridcell1, counter_placement, DOOR_placement, shelf_params, priority_shelves, AISLE_SPACE)
-    #shelf_placement = {}
-    wall_values = list(result_0.values()) + list(result_05.values())+ list(result_08.values())
+
+    # 貨架的優化放置
+    shelf_placement, unusable_gridcell2 = opt_shelf.shelf_opt(shelf_area, unusable_gridcell1, counter_placement,
+                                                              DOOR_placement, shelf_params, priority_shelves,
+                                                              AISLE_SPACE)
+
+    # 合併所有結果，將各個階段的結果放入 result 中
+    wall_values = list(result_0.values()) + list(result_05.values()) + list(result_08.values())
     result_0 = {i: wall_values[i] for i in range(len(wall_values))}
-    values = list(result_0.values())+list(result_1.values()) +list(result_2.values())
+
+    # 最終結果合併，包括中間結果、最終放置結果和貨架區
+    values = list(result_0.values()) + list(result_1.values()) + list(result_0102.values()) + list(result_2.values()) + list(
+        shelf_placement.values())
     result = {i: values[i] for i in range(len(values))}
-    dxf_manipulation.draw_dxf(result,feasible)
-    layout_plot(obj_params, result_0, result_0102, result_1, result_2, shelf_placement,unusable_gridcell_dict)
+
+    # 繪製結果並生成圖片
+    layout_plot(obj_params, result_0, result_0102, result_1, result_2, shelf_placement, unusable_gridcell_dict)
+
+    # 生成 DXF 檔案
+    dxf_manipulation.draw_dxf(result, feasible)
+
