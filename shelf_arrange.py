@@ -10,11 +10,13 @@ import dxf_to_dict_processor
 import re
 
 def layout_with_numeric_value(shelf_params, priority_shelves, SPACE_WIDTH, SPACE_HEIGHT, AISLE_SPACE):
+    shelf_params, priority_shelves = filter_shelves(shelf_params, priority_shelves, SPACE_WIDTH)
     # Create the model
     model = cp_model.CpModel()
 
     num_shelf = len(shelf_params)
     unusable_gridcell = {0: {'x': 0, 'y': 0, 'w': 470, 'h': 176}}
+    #unusable_gridcell = {}
     num_unusable_cells = len(unusable_gridcell)
 
     # Define variables
@@ -45,11 +47,12 @@ def layout_with_numeric_value(shelf_params, priority_shelves, SPACE_WIDTH, SPACE
             model.Add(unusable_gridcell[k]['x'] >= x[i] + w[i] - SPACE_WIDTH * (1 + s[i,k] - t[i,k])).OnlyEnforceIf(select[i])
             model.Add(y[i] >= unusable_gridcell[k]['y'] + unusable_gridcell[k]['h'] + 1 - SPACE_HEIGHT * (1 - s[i,k] + t[i,k])).OnlyEnforceIf(select[i])
             model.Add(unusable_gridcell[k]['y'] >= y[i] + h[i] - SPACE_HEIGHT * (2 - s[i,k] - t[i,k])).OnlyEnforceIf(select[i])
+
     
     # Boundary constraints
     for i in range(num_shelf):
         model.Add(x[i] + w[i] <= SPACE_WIDTH).OnlyEnforceIf(select[i])
-        model.Add(y[i] + h[i]<= SPACE_HEIGHT - 60).OnlyEnforceIf(select[i])
+        model.Add(y[i] + h[i]<= SPACE_HEIGHT-60).OnlyEnforceIf(select[i])
     
     # Non-intersecting constraints
     for i in range(num_shelf):
@@ -59,7 +62,7 @@ def layout_with_numeric_value(shelf_params, priority_shelves, SPACE_WIDTH, SPACE
                 model.Add(y[i] + h[i] + AISLE_SPACE <= y[j] + SPACE_HEIGHT * (1 + p[i,j] - q[i,j]) + SPACE_HEIGHT * (1 - select[j]))
                 model.Add(x[j] + w[j] + AISLE_SPACE <= x[i] + SPACE_WIDTH * (1 - p[i,j] + q[i,j]) + SPACE_WIDTH * (1 - select[i]))
                 model.Add(y[j] + h[j] + AISLE_SPACE <= y[i] + SPACE_HEIGHT * (2 - p[i,j] - q[i,j]) + SPACE_HEIGHT * (1 - select[i]))
-
+    
     # Width and height constraints
     for i in range(num_shelf):
         model.Add(w[i] == max(shelf_params[i]['w_h']))
@@ -73,10 +76,12 @@ def layout_with_numeric_value(shelf_params, priority_shelves, SPACE_WIDTH, SPACE
     model.Add(sum(select[i] * shelf_params[i]['amount'] for i in range(num_shelf)) <= 35)
     
     # Objective function: Maximize priority shelf selection while minimizing distance
+     
     model.Maximize(
         sum(select[i] * (10 if i in priority_shelves else 3) for i in range(num_shelf))
         - 0.01 * sum(x[i] + y[i] for i in range(num_shelf))
     )
+    
 
     # Create the solver
     solver = cp_model.CpSolver()
@@ -97,17 +102,31 @@ def layout_with_numeric_value(shelf_params, priority_shelves, SPACE_WIDTH, SPACE
                     'w': solver.Value(w[i]),
                     'h': solver.Value(h[i]),
                     'number': shelf_params[i]['amount'],
-                    'name': shelf_params[i]['name']
+                    'name': shelf_params[i]['name'],
+                    'type':'objects'
                 }
                 tmp+=1
                 # print(f"Shelf {shelf_params[i]['name']}: x={x[i].X}, y={y[i].X}, w={w[i].X}, h={h[i].X}, number={shelf_params[i]['amount']}")
         tmp+=1
-        result.update({tmp:{'x':0,'y':0,'w':360,'h':66,'name':'FF'}})
+        result.update({tmp:{'x':0,'y':0,'w':360,'h':66,'name':'FF','type':'objects'}})
     else:
         print("Model is infeasible")
 
 
     return result
+
+def filter_shelves(shelf_params, priority_shelves, SPACE_WIDTH):
+    # 過濾寬度大於 SPACE_WIDTH 的貨架
+    filtered_shelf_params = {
+        key: value for key, value in shelf_params.items()
+        if value['w_h'][0] <= SPACE_WIDTH
+    }
+
+    # 找出被過濾的貨架中的優先級貨架
+    removed_shelves = set(shelf_params.keys()) - set(filtered_shelf_params.keys())
+    updated_priority_shelves = [shelf for shelf in priority_shelves if shelf not in removed_shelves]
+
+    return filtered_shelf_params, updated_priority_shelves
 
 
 def layout_plot(result):
@@ -139,7 +158,7 @@ def layout_plot(result):
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.title('Space Layout')
-
+    plt.axis='equal'
     # Show plot
     plt.grid(True)
     plt.gca().set_aspect('equal', adjustable='box')
@@ -210,6 +229,6 @@ if __name__ == '__main__':
                     19:{'w_h':[587,78],'amount':13, 'name':'587x78'},
                     20:{'w_h':[546,78],'amount':14, 'name':'637x78'},
                     21:{'w_h':[678,78],'amount':15, 'name':'678x78'}}
-    result = layout_with_numeric_value(shelf_params,priority_shelves,  1400, 1000, AISLE_SPACE)
+    result = layout_with_numeric_value(shelf_params,priority_shelves,  535, 947, AISLE_SPACE)
 
     layout_plot(result)
