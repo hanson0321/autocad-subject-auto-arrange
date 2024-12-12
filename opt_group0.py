@@ -201,7 +201,7 @@ def place_counter_along_wall(room_polygon, rectangles, preplaced_polygons, speci
             counter_placement = 'south'
     return placements, counter_placement, available_segments
 
-def counter_placements(room_polygon, obj_params, counter_space, lineup_space, specified_segment, preplaced, min_x, max_x, min_y, max_y):
+def counter_placements(unusable_gridcell, room_polygon, obj_params, counter_space, lineup_space, specified_segment, preplaced, min_x, max_x, min_y, max_y):
     rectangles = []
     for id , object in obj_params.items():
         if object['name'] == '後櫃檯':
@@ -338,11 +338,26 @@ def counter_placements(room_polygon, obj_params, counter_space, lineup_space, sp
         unusable_gridcell0 = counter_result.copy()
         unusable_gridcell0.update({2:{'x':counter_area['x'], 'y':counter_area['y']+counter_area['h']-lineup_space, 'w':w2, 'h':lineup_space}})
         unusable_gridcell0.update({3:{'x':counter_area['x'], 'y':counter_area['y']+h1, 'w':w1, 'h':counter_space}})
-        unusable_gridcell0.update({4:{'x':counter_area['x']+w2, 'y':counter_area['y']+h1+counter_space, 'w':90, 'h':h2}})  
-    values = list(unusable_gridcell0.values())+list(preplaced.values())
-    unusable_gridcell0 = {}
-    unusable_gridcell0 = {i: values[i] for i in range(len(values))}
-    return  counter_result, counter_placement, unusable_gridcell0, available_segments
+        unusable_gridcell0.update({4:{'x':counter_area['x']+w2, 'y':counter_area['y']+h1+counter_space, 'w':90, 'h':h2}})
+    unusable_gridcell_output = unusable_gridcell.copy()
+    max_key = max(unusable_gridcell_output .keys())
+    for key, value in unusable_gridcell0.items():
+        max_key += 1
+        if 'name' in unusable_gridcell0[key]:
+            unusable_gridcell0[key]['type'] = 'objects'
+        else:
+            unusable_gridcell0[key]['type'] = 'aisle'
+        unusable_gridcell_output [max_key] = value
+    unusable_gridcell_output[max_key+1] = preplaced[0]
+    # print(preplaced)
+    # print(preplaced[0])
+    # print("testtttt")
+    # print(unusable_gridcell)
+    # print("testenddddd")
+    # values = list(unusable_gridcell0.values())+list(preplaced.values())
+    # unusable_gridcell0 = {}
+    # unusable_gridcell0 = {i: values[i] for i in range(len(values))}
+    return  counter_result, counter_placement, unusable_gridcell_output , available_segments
 
 if __name__ == '__main__':
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise_v1.dxf'
@@ -352,7 +367,7 @@ if __name__ == '__main__':
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/六甲水林.dxf'
     #doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/竹南旺大埔.dxf'
     doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/§jµo¶Xµo_™≈_0909.dxf'
-    unusable_gridcell,_, min_x, max_x, min_y, max_y, poly_feasible, wall, door, frontdoor = get_feasible_area.feasible_area(doc)
+    unusable_gridcell, unusable_gridcell_dict, min_x, max_x, min_y, max_y, poly_feasible, wall, door, frontdoor = get_feasible_area.feasible_area(doc)
 
     SPACE_WIDTH,SPACE_HEIGHT= max_x-min_x+1, max_y-min_y+1
     AISLE_SPACE = 100
@@ -403,7 +418,7 @@ if __name__ == '__main__':
             DOOR_ENTRY = {0:{'x':min(x1,x2), 'y':y1-200, 'w':max(x1,x2)-min(x1,x2), 'h':200}}
             DOOR_placement = 'north'
 
-    counter_result, counter_placement, unusable_gridcell_1, available_segments = counter_placements(poly_feasible, obj_params, COUNTER_SPACING, LINEUP_SPACING, DOOR_PLACEMENT, DOOR_ENTRY, min_x, max_x, min_y, max_y)
+    counter_result, counter_placement, unusable_gridcell_1, available_segments = counter_placements(unusable_gridcell_dict, poly_feasible, obj_params, COUNTER_SPACING, LINEUP_SPACING, DOOR_PLACEMENT, DOOR_ENTRY, min_x, max_x, min_y, max_y)
     # Plotting
     fig, ax = plt.subplots()
 
