@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from shapely.geometry import Polygon, box, LineString
+from shapely.geometry import Polygon, box, LineString, Point
 import time
 import matplotlib.patches as patches
 import matplotlib
@@ -41,7 +41,21 @@ def find_furthest_segment(specified_segment, edges):
     
     return furthest_segment
 
-
+def define_orientation(obj,poly_feasible):
+    ### 門前至少10cm
+    if(obj['w']>obj['h']): ### 橫著擺 面南北
+        point = Point(obj['x'] + obj['w']/2, obj['y']-10)
+        if(poly_feasible.contains(point)):
+            obj_orientation = 'north'
+        else:
+            obj_orientation = 'south'
+    else: ### 直著擺 面東西
+        point = Point(obj['x']-10, obj['y'] + obj['h']/2)
+        if(poly_feasible.contains(point)):
+            obj_orientation = 'east'
+        else:
+            obj_orientation = 'west'
+    return obj_orientation
 
 def place_object_along_wall(obj_params, edges, preplaced_polygons,  specified_segment, room_polygon, space_min_x, space_min_y, space_max_x, space_max_y, door_opening_space, unusable_gridcell, unusable_gridcell0):
     rectangles= [params['w_h'] for params in obj_params.values() if params['group'] == 0.8]
@@ -58,7 +72,7 @@ def place_object_along_wall(obj_params, edges, preplaced_polygons,  specified_se
     # Union of pre-placed polygons
     preplaced_union = unary_union(preplaced_polygons)
 
-     # Find the closest segment to the specified segment
+    # Find the closest segment to the specified segment
     placements = []
     placement_with_door = []
     for edge in available_segments:
@@ -162,11 +176,19 @@ def place_object_along_wall(obj_params, edges, preplaced_polygons,  specified_se
         if not rectangles:
             print('All rectangles placed!')
             break
+    
     placement_with_door = create_dict_from_polygons(placement_with_door, obj_params)
     unusable_gridcell1 = {}
     values = list(unusable_gridcell.values()) + list(unusable_gridcell0.values())+list(placement_with_door.values())
     unusable_gridcell1 = {i: values[i] for i in range(len(values))}
     placements_dict = create_dict_from_polygons(placements, obj_params)
+    max_key = max(unusable_gridcell0.keys())
+    for key, values in placements_dict.items():
+        max_key += 1
+        placements_dict[key]['type'] = 'objects'
+        placements_dict[key]['orientation'] = define_orientation(values,room_polygon)
+        unusable_gridcell0[max_key] = values
+
     return placements, placements_dict, unusable_gridcell1
 
 
@@ -189,10 +211,6 @@ def create_dict_from_polygons(polygons, obj_params):
             if max(object['w'],object['h']) == max(obj['w_h']) and min(object['w'],object['h'])==min(obj['w_h']):
                 rect_dict[id]['name'] = obj['name']
     return rect_dict
-
-
-
-
 
 if __name__ == '__main__':
     doc = '/Users/lilianliao/Documents/研究所/Lab/Layout Generation/code/input_dxf/revise_v1.dxf'
@@ -229,7 +247,7 @@ if __name__ == '__main__':
     }
     rectangles= [params['w_h'] for params in obj_params.values() if params['group'] == 0.5]
     # Create pre-placed polygons
-    counter_result, counter_placement, unusable_gridcell0, available_segments = opt_group0.counter_placements(poly_feasible, obj_params, COUNTER_SPACING, LINEUP_SPACING, DOOR_PLACEMENT, DOOR_ENTRY, min_x, max_x, min_y, max_y)
+    counter_result, counter_placement, unusable_gridcell0, available_segments = opt_group0.counter_placements(unusable_gridcell, poly_feasible, obj_params, COUNTER_SPACING, LINEUP_SPACING, DOOR_PLACEMENT, DOOR_ENTRY, min_x, max_x, min_y, max_y)
     preplaced_polygons = create_preplaced_polygons(unusable_gridcell0)
     placements_polygon, placements, unusable_gridcell1 = place_object_along_wall(obj_params, available_segments,preplaced_polygons,DOOR_PLACEMENT, poly_feasible, min_x, min_y, max_x, max_y, OPENDOOR_SPACING, unusable_gridcell, unusable_gridcell0)
     # Convert list of polygons to dictionary
